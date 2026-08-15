@@ -28,6 +28,7 @@ npm install
    - [`supabase/schema.sql`](supabase/schema.sql) — productos, talles, colores, zonas de estampado y pedidos.
    - [`supabase/migration_site_settings.sql`](supabase/migration_site_settings.sql) — configuración editable del sitio (logo, textos, colores).
    - [`supabase/migration_printful.sql`](supabase/migration_printful.sql) — opcional, para la vista previa fotorrealista.
+   - [`supabase/migration_design_catalog.sql`](supabase/migration_design_catalog.sql) — catálogo de diseños propios.
 3. En **Authentication → Users**, creá manualmente tu usuario admin (email + contraseña).
    Es el único que va a poder loguearse en `/admin`.
 4. Copiá `Project URL`, `anon public key` y `service_role key` desde
@@ -110,6 +111,9 @@ supabase/schema.sql       → schema completo de la base de datos
 - **`/admin/sitio`** — logo (texto o imagen), colores de marca, textos del hero,
   la cinta animada, los 3 pasos de "cómo funciona" y el footer. Todo el sitio
   público lee estos valores en vivo, sin necesidad de tocar código ni redeployar.
+- **`/admin/disenos`** — catálogo de diseños propios (subís imágenes vos). En
+  `/pedido`, el cliente puede elegir entre subir su propia imagen o elegir uno
+  de estos diseños ya cargados.
 
 Agregar prendas, talles y colores nuevos (no solo editar los existentes) se
 hace directo en la tabla de Supabase (`products`, `product_sizes`,

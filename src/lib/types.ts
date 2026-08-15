@@ -42,6 +42,16 @@ export type OrderStatus =
   | "entregado"
   | "cancelado";
 
+export type DesignCatalogItem = {
+  id: string;
+  name: string;
+  image_url: string;
+  image_public_id: string;
+  category: string | null;
+  active: boolean;
+  sort_order: number;
+};
+
 export type SiteSettings = {
   id: number;
   logo_text: string;

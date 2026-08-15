@@ -6,9 +6,10 @@ import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import clsx from "clsx";
 import { Check, ChevronLeft, ChevronRight } from "lucide-react";
-import type { PrintZone, Product, ProductColor, ProductSize } from "@/lib/types";
+import type { DesignCatalogItem, PrintZone, Product, ProductColor, ProductSize } from "@/lib/types";
 import { GarmentZonePicker } from "./GarmentZonePicker";
-import { ImageUploader, type UploadedImage } from "./ImageUploader";
+import { type UploadedImage } from "./ImageUploader";
+import { DesignPicker } from "./DesignPicker";
 import { MockupPreview } from "./MockupPreview";
 import { SizeGuideModal } from "./SizeGuideModal";
 
@@ -19,11 +20,13 @@ export function OrderWizard({
   sizes,
   colors,
   printZones,
+  designs,
 }: {
   products: Product[];
   sizes: ProductSize[];
   colors: ProductColor[];
   printZones: PrintZone[];
+  designs: DesignCatalogItem[];
 }) {
   const searchParams = useSearchParams();
   const preselected = searchParams.get("producto");
@@ -210,7 +213,7 @@ export function OrderWizard({
             <div className="grid gap-10 sm:grid-cols-2">
               <div>
                 <p className="mb-3 text-sm font-medium">Tu imagen</p>
-                <ImageUploader value={image} onChange={setImage} />
+                <DesignPicker designs={designs} value={image} onChange={setImage} />
               </div>
               <div>
                 <p className="mb-3 text-sm font-medium">Ubicación del estampado</p>

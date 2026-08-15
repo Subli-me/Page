@@ -3,13 +3,15 @@ import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 import { OrderWizard } from "@/components/order/OrderWizard";
 import { getActiveProducts, getPrintZones } from "@/lib/products";
+import { getActiveDesigns } from "@/lib/designs";
 import { createClient } from "@/lib/supabase/server";
 import { isDemoMode, DEMO_SIZES, DEMO_COLORS } from "@/lib/demo-data";
 
 export default async function PedidoPage() {
-  const [products, printZones] = await Promise.all([
+  const [products, printZones, designs] = await Promise.all([
     getActiveProducts(),
     getPrintZones(),
+    getActiveDesigns(),
   ]);
 
   let allSizes = DEMO_SIZES;
@@ -49,6 +51,7 @@ export default async function PedidoPage() {
                 sizes={allSizes}
                 colors={allColors}
                 printZones={printZones}
+                designs={designs}
               />
             </Suspense>
           </div>
