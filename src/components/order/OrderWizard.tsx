@@ -213,14 +213,22 @@ export function OrderWizard({
           )}
 
           {step === 2 && (
-            <div className="grid gap-10 sm:grid-cols-2">
-              <div>
-                <p className="mb-3 text-sm font-medium">Tu imagen</p>
-                <DesignPicker designs={designs} value={image} onChange={setImage} />
+            <div className="grid gap-10 lg:grid-cols-[1fr_1.15fr] lg:items-start">
+              <div className="lg:sticky lg:top-24">
+                <p className="mb-3 text-sm font-medium">Vista previa</p>
+                <GarmentZonePicker
+                  zones={printZones}
+                  value={zoneKey}
+                  onChange={setZoneKey}
+                  image={image}
+                  colorHex={productColors.find((c) => c.name === color)?.hex}
+                />
               </div>
-              <div>
-                <p className="mb-3 text-sm font-medium">Ubicación del estampado</p>
-                <GarmentZonePicker zones={printZones} value={zoneKey} onChange={setZoneKey} />
+              <div className="space-y-8">
+                <div>
+                  <p className="mb-3 text-sm font-medium">Tu imagen</p>
+                  <DesignPicker designs={designs} value={image} onChange={setImage} />
+                </div>
                 {product && (
                   <MockupPreview
                     productId={product.id}

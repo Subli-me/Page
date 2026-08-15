@@ -53,17 +53,34 @@ export function ImageUploader({
 
   if (value) {
     return (
-      <div className="relative mx-auto max-w-xs overflow-hidden rounded-2xl border border-line">
-        <div className="relative aspect-square">
+      <div className="group relative overflow-hidden rounded-2xl border border-line">
+        <div className="relative aspect-video sm:aspect-4/3">
           <Image src={value.url} alt="Tu diseño" fill className="object-contain bg-panel" />
         </div>
         <button
           type="button"
           onClick={() => onChange(null)}
-          className="absolute right-2 top-2 rounded-full bg-ink/80 p-1.5 text-paper hover:bg-ink"
+          className="absolute right-2 top-2 rounded-full bg-ink/80 p-1.5 text-paper opacity-0 transition-opacity hover:bg-ink group-hover:opacity-100"
         >
           <X size={16} />
         </button>
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          className="absolute inset-x-0 bottom-0 bg-dark/70 py-2 text-center text-xs text-paper opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100"
+        >
+          Cambiar imagen
+        </button>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) upload(file);
+          }}
+        />
       </div>
     );
   }
@@ -81,7 +98,7 @@ export function ImageUploader({
         }}
         onClick={() => inputRef.current?.click()}
         className={clsx(
-          "mx-auto flex max-w-xs cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed px-6 py-14 text-center transition-colors",
+          "flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed px-6 py-14 text-center transition-colors",
           isDragging ? "border-accent bg-accent-soft/50" : "border-line hover:border-ink"
         )}
       >
