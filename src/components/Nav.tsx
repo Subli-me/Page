@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowUpRight } from "lucide-react";
 import { getSiteSettings } from "@/lib/settings";
+import { ProcessModal } from "./ProcessModal";
 
 export async function Nav() {
   const settings = await getSiteSettings();
@@ -23,12 +24,19 @@ export async function Nav() {
           >
             {settings.nav_catalog_label}
           </Link>
-          <Link
-            href="/como-estampamos"
-            className="link-underline hidden text-paper/70 transition-colors hover:text-paper sm:inline"
-          >
-            {settings.nav_process_label}
-          </Link>
+          <ProcessModal
+            triggerLabel={settings.nav_process_label}
+            title={settings.process_title}
+            subtitle={settings.process_subtitle}
+            steps={[
+              { title: settings.process_step1_title, text: settings.process_step1_text },
+              { title: settings.process_step2_title, text: settings.process_step2_text },
+              { title: settings.process_step3_title, text: settings.process_step3_text },
+              { title: settings.process_step4_title, text: settings.process_step4_text },
+            ]}
+            careTitle={settings.care_title}
+            careText={settings.care_text}
+          />
           <Link
             href="/pedido"
             className="group inline-flex items-center gap-1.5 rounded-full bg-lime px-5 py-2.5 font-medium text-dark transition-transform hover:-translate-y-0.5"
