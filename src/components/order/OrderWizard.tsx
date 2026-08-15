@@ -10,6 +10,7 @@ import type { PrintZone, Product, ProductColor, ProductSize } from "@/lib/types"
 import { GarmentZonePicker } from "./GarmentZonePicker";
 import { ImageUploader, type UploadedImage } from "./ImageUploader";
 import { MockupPreview } from "./MockupPreview";
+import { SizeGuideModal } from "./SizeGuideModal";
 
 const STEPS = ["Prenda", "Talle y color", "Diseño", "Tus datos"] as const;
 
@@ -162,7 +163,10 @@ export function OrderWizard({
           {step === 1 && product && (
             <div className="space-y-8">
               <div>
-                <p className="mb-3 text-sm font-medium">Talle</p>
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-sm font-medium">Talle</p>
+                  <SizeGuideModal productSlug={product.slug} />
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {(productSizes.length ? productSizes.map((s) => s.size) : ["S", "M", "L", "XL"]).map((s) => (
                     <button
