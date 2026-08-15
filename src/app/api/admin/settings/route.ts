@@ -25,6 +25,15 @@ const ALLOWED_FIELDS = [
   "contact_email",
   "contact_phone",
   "contact_instagram",
+  "seo_title",
+  "seo_description",
+  "nav_catalog_label",
+  "pedido_badge",
+  "pedido_title",
+  "pedido_subtitle",
+  "confirmation_title",
+  "confirmation_message",
+  "footer_copyright_suffix",
 ];
 
 export async function PATCH(req: Request) {

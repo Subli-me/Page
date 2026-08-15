@@ -29,6 +29,11 @@ npm install
    - [`supabase/migration_site_settings.sql`](supabase/migration_site_settings.sql) — configuración editable del sitio (logo, textos, colores).
    - [`supabase/migration_printful.sql`](supabase/migration_printful.sql) — opcional, para la vista previa fotorrealista.
    - [`supabase/migration_design_catalog.sql`](supabase/migration_design_catalog.sql) — catálogo de diseños propios.
+
+   Si ya habías ejecutado `migration_site_settings.sql` antes de esta versión,
+   corré también [`supabase/migration_site_settings_2.sql`](supabase/migration_site_settings_2.sql)
+   para sumar las columnas de SEO/navegación/confirmación que se agregaron después
+   (en un Supabase nuevo no hace falta, ya están en el `schema.sql`/`migration_site_settings.sql` actualizado).
 3. En **Authentication → Users**, creá manualmente tu usuario admin (email + contraseña).
    Es el único que va a poder loguearse en `/admin`.
 4. Copiá `Project URL`, `anon public key` y `service_role key` desde
@@ -108,9 +113,11 @@ supabase/schema.sql       → schema completo de la base de datos
 
 - **`/admin`** — pedidos entrantes, imagen lista para producción, cambio de estado.
 - **`/admin/productos`** — precio de venta y costo de cada prenda, extra por zona de estampado.
-- **`/admin/sitio`** — logo (texto o imagen), colores de marca, textos del hero,
-  la cinta animada, los 3 pasos de "cómo funciona" y el footer. Todo el sitio
-  público lee estos valores en vivo, sin necesidad de tocar código ni redeployar.
+- **`/admin/sitio`** — logo (texto o imagen), colores de marca, navegación,
+  textos del hero, la cinta animada, los 3 pasos de "cómo funciona", los
+  textos de la página de pedido, el mensaje de confirmación, el footer y el
+  SEO (título/descripción de la pestaña del navegador). Todo el sitio público
+  lee estos valores en vivo, sin necesidad de tocar código ni redeployar.
 - **`/admin/disenos`** — catálogo de diseños propios (subís imágenes vos). En
   `/pedido`, el cliente puede elegir entre subir su propia imagen o elegir uno
   de estos diseños ya cargados.

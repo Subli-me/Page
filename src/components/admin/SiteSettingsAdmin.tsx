@@ -59,6 +59,10 @@ export function SiteSettingsAdmin({ initial }: { initial: SiteSettings }) {
         </div>
       </Section>
 
+      <Section title="Navegación">
+        <EditableText label="Etiqueta del link a catálogo" value={settings.nav_catalog_label} onSave={(v) => save("nav_catalog_label", v)} />
+      </Section>
+
       <Section title="Cinta animada (marquee)">
         <EditableText label="Texto" value={settings.marquee_text} onSave={(v) => save("marquee_text", v)} />
       </Section>
@@ -82,13 +86,38 @@ export function SiteSettingsAdmin({ initial }: { initial: SiteSettings }) {
         </div>
       </Section>
 
+      <Section title="Página de pedido (/pedido)">
+        <div className="grid gap-6 sm:grid-cols-2">
+          <EditableText label="Badge superior" value={settings.pedido_badge} onSave={(v) => save("pedido_badge", v)} />
+          <EditableText label="Título" value={settings.pedido_title} onSave={(v) => save("pedido_title", v)} />
+        </div>
+        <div className="mt-6">
+          <EditableText label="Subtítulo" value={settings.pedido_subtitle} onSave={(v) => save("pedido_subtitle", v)} multiline />
+        </div>
+      </Section>
+
+      <Section title="Pantalla de confirmación (al terminar un pedido)">
+        <div className="grid gap-6 sm:grid-cols-2">
+          <EditableText label="Título" value={settings.confirmation_title} onSave={(v) => save("confirmation_title", v)} />
+          <EditableText label="Mensaje" value={settings.confirmation_message} onSave={(v) => save("confirmation_message", v)} />
+        </div>
+      </Section>
+
       <Section title="Footer">
         <div className="grid gap-6 sm:grid-cols-2">
           <EditableText label="Título — línea 1" value={settings.footer_headline_line1} onSave={(v) => save("footer_headline_line1", v)} />
           <EditableText label="Título — línea 2 (color lima)" value={settings.footer_headline_line2} onSave={(v) => save("footer_headline_line2", v)} />
         </div>
-        <div className="mt-6">
+        <div className="mt-6 grid gap-6 sm:grid-cols-2">
           <EditableText label="Tagline" value={settings.footer_tagline} onSave={(v) => save("footer_tagline", v)} />
+          <EditableText label="Sufijo del copyright (© año — ___)" value={settings.footer_copyright_suffix} onSave={(v) => save("footer_copyright_suffix", v)} />
+        </div>
+      </Section>
+
+      <Section title="SEO (pestaña del navegador / buscadores)">
+        <div className="grid gap-6">
+          <EditableText label="Título (title tag)" value={settings.seo_title} onSave={(v) => save("seo_title", v)} />
+          <EditableText label="Descripción" value={settings.seo_description} onSave={(v) => save("seo_description", v)} multiline />
         </div>
       </Section>
 

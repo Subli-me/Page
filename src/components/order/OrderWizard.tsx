@@ -21,12 +21,16 @@ export function OrderWizard({
   colors,
   printZones,
   designs,
+  confirmationTitle,
+  confirmationMessage,
 }: {
   products: Product[];
   sizes: ProductSize[];
   colors: ProductColor[];
   printZones: PrintZone[];
   designs: DesignCatalogItem[];
+  confirmationTitle: string;
+  confirmationMessage: string;
 }) {
   const searchParams = useSearchParams();
   const preselected = searchParams.get("producto");
@@ -93,10 +97,9 @@ export function OrderWizard({
         <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-accent-soft text-accent">
           <Check size={28} />
         </div>
-        <h2 className="font-display text-3xl">¡Pedido recibido!</h2>
+        <h2 className="font-display text-3xl">{confirmationTitle}</h2>
         <p className="mt-3 text-ink-soft">
-          Te vamos a contactar a <strong>{contact.email}</strong> para confirmar
-          los detalles y coordinar el pago.
+          {confirmationMessage} Te escribimos a <strong>{contact.email}</strong>.
         </p>
       </div>
     );

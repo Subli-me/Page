@@ -21,7 +21,7 @@ export async function Nav() {
             href="/#catalogo"
             className="link-underline hidden text-paper/70 transition-colors hover:text-paper sm:inline"
           >
-            Catálogo
+            {settings.nav_catalog_label}
           </Link>
           <Link
             href="/pedido"

@@ -40,6 +40,25 @@ create table if not exists site_settings (
   contact_phone text,
   contact_instagram text,
 
+  -- SEO
+  seo_title text not null default 'Sublime — Estampado DTF a medida',
+  seo_description text not null default 'Remeras, buzos y chombas estampadas con tu diseño. Subí tu imagen, elegí el estampado y lo mandamos a imprimir.',
+
+  -- Navegación
+  nav_catalog_label text not null default 'Catálogo',
+
+  -- Página /pedido
+  pedido_badge text not null default 'Pedido personalizado',
+  pedido_title text not null default 'Armemos tu prenda',
+  pedido_subtitle text not null default 'En unos pasos elegís la prenda, subís tu imagen y nos llega listo para producción.',
+
+  -- Pantalla de confirmación
+  confirmation_title text not null default '¡Pedido recibido!',
+  confirmation_message text not null default 'Te vamos a contactar para confirmar los detalles y coordinar el pago.',
+
+  -- Footer
+  footer_copyright_suffix text not null default 'DTF Studio',
+
   updated_at timestamptz not null default now()
 );
 

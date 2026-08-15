@@ -19,11 +19,13 @@ const fraunces = Fraunces({
   axes: ["opsz"],
 });
 
-export const metadata: Metadata = {
-  title: "Sublime — Estampado DTF a medida",
-  description:
-    "Remeras, buzos y chombas estampadas con tu diseño. Subí tu imagen, elegí el estampado y lo mandamos a imprimir.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSiteSettings();
+  return {
+    title: settings.seo_title,
+    description: settings.seo_description,
+  };
+}
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const settings = await getSiteSettings();

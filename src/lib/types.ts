@@ -83,6 +83,20 @@ export type SiteSettings = {
   contact_email: string | null;
   contact_phone: string | null;
   contact_instagram: string | null;
+
+  seo_title: string;
+  seo_description: string;
+
+  nav_catalog_label: string;
+
+  pedido_badge: string;
+  pedido_title: string;
+  pedido_subtitle: string;
+
+  confirmation_title: string;
+  confirmation_message: string;
+
+  footer_copyright_suffix: string;
 };
 
 export type Order = {

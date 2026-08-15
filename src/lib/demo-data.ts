@@ -98,4 +98,19 @@ export const DEMO_SETTINGS: SiteSettings = {
   contact_email: null,
   contact_phone: null,
   contact_instagram: null,
+
+  seo_title: "Sublime — Estampado DTF a medida",
+  seo_description:
+    "Remeras, buzos y chombas estampadas con tu diseño. Subí tu imagen, elegí el estampado y lo mandamos a imprimir.",
+
+  nav_catalog_label: "Catálogo",
+
+  pedido_badge: "Pedido personalizado",
+  pedido_title: "Armemos tu prenda",
+  pedido_subtitle: "En unos pasos elegís la prenda, subís tu imagen y nos llega listo para producción.",
+
+  confirmation_title: "¡Pedido recibido!",
+  confirmation_message: "Te vamos a contactar para confirmar los detalles y coordinar el pago.",
+
+  footer_copyright_suffix: "DTF Studio",
 };

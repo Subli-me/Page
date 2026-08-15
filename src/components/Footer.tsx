@@ -26,7 +26,7 @@ export async function Footer() {
         </div>
 
         <div className="mt-16 flex flex-col gap-2 border-t border-paper/10 pt-8 text-sm text-paper/50 sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} {settings.logo_text} — DTF Studio</p>
+          <p>© {new Date().getFullYear()} {settings.logo_text} — {settings.footer_copyright_suffix}</p>
           <p>{settings.footer_tagline}</p>
         </div>
       </div>

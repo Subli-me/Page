@@ -4,14 +4,16 @@ import { Footer } from "@/components/Footer";
 import { OrderWizard } from "@/components/order/OrderWizard";
 import { getActiveProducts, getPrintZones } from "@/lib/products";
 import { getActiveDesigns } from "@/lib/designs";
+import { getSiteSettings } from "@/lib/settings";
 import { createClient } from "@/lib/supabase/server";
 import { isDemoMode, DEMO_SIZES, DEMO_COLORS } from "@/lib/demo-data";
 
 export default async function PedidoPage() {
-  const [products, printZones, designs] = await Promise.all([
+  const [products, printZones, designs, settings] = await Promise.all([
     getActiveProducts(),
     getPrintZones(),
     getActiveDesigns(),
+    getSiteSettings(),
   ]);
 
   let allSizes = DEMO_SIZES;
@@ -34,15 +36,12 @@ export default async function PedidoPage() {
       <main className="flex-1">
         <section className="mx-auto max-w-4xl px-6 pt-16 pb-24 sm:pt-20">
           <p className="mb-3 text-sm uppercase tracking-[0.2em] text-accent">
-            Pedido personalizado
+            {settings.pedido_badge}
           </p>
           <h1 className="font-display text-4xl tracking-tight sm:text-5xl">
-            Armemos tu prenda
+            {settings.pedido_title}
           </h1>
-          <p className="mt-4 max-w-lg text-ink-soft">
-            En unos pasos elegís la prenda, subís tu imagen y nos llega listo
-            para producción.
-          </p>
+          <p className="mt-4 max-w-lg text-ink-soft">{settings.pedido_subtitle}</p>
 
           <div className="mt-12">
             <Suspense>
@@ -52,6 +51,8 @@ export default async function PedidoPage() {
                 colors={allColors}
                 printZones={printZones}
                 designs={designs}
+                confirmationTitle={settings.confirmation_title}
+                confirmationMessage={settings.confirmation_message}
               />
             </Suspense>
           </div>
