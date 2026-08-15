@@ -28,10 +28,10 @@ export default async function Home() {
             <p className="mb-6 inline-flex items-center gap-2 rounded-full border border-paper/20 px-4 py-1.5 text-xs uppercase tracking-[0.2em] text-lime">
               {settings.hero_badge}
             </p>
-            <h1 className="max-w-4xl font-display text-6xl leading-[0.95] tracking-tight sm:text-8xl">
+            <h1 className="max-w-4xl font-display text-6xl leading-[0.95] tracking-tight text-blue-500 sm:text-8xl">
               {settings.hero_title_line1}
               <br />
-              <span className="italic text-lime">{settings.hero_title_line2}</span>
+              <span className="italic text-blue-400">{settings.hero_title_line2}</span>
             </h1>
             <p className="mt-8 max-w-md text-lg text-paper/60">{settings.hero_subtitle}</p>
             <div className="mt-10 flex flex-wrap items-center gap-4">
