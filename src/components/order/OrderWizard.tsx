@@ -224,6 +224,7 @@ export function OrderWizard({
                   size={size}
                   color={color}
                   printZoneKey={zoneKey}
+                  defaultZoneKey={printZones[0]?.key ?? null}
                   zoneLabel={zone?.label ?? null}
                   image={image}
                   onDesignTransformChange={setDesignTransform}

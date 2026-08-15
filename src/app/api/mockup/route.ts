@@ -5,10 +5,12 @@ import { createAndWaitMockup } from "@/lib/printful";
 
 const schema = z.object({
   productId: z.string().uuid(),
-  size: z.string().min(1),
+  size: z.string().min(1).optional().nullable(),
   color: z.string().optional().nullable(),
   printZoneKey: z.string().min(1),
-  imageUrl: z.string().url(),
+  // Sin imagen todavía se puede pedir la foto de la prenda para mostrarla
+  // "en blanco" mientras el cliente elige qué subir.
+  imageUrl: z.string().url().optional().nullable(),
 });
 
 export async function POST(req: Request) {
@@ -47,7 +49,8 @@ export async function POST(req: Request) {
   }
 
   // 2) Si no hay mockup propio, probamos con Printful (si está configurado y mapeado).
-  if (!process.env.PRINTFUL_API_KEY) {
+  // Printful necesita el archivo de imagen y el talle para generar la foto.
+  if (!process.env.PRINTFUL_API_KEY || !imageUrl || !size) {
     return NextResponse.json({ available: false });
   }
 

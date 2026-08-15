@@ -12,6 +12,7 @@ type Params = {
   size: string | null;
   color: string | null;
   printZoneKey: string | null;
+  defaultZoneKey: string | null;
   zoneLabel: string | null;
   image: UploadedImage | null;
   onDesignTransformChange?: (t: DesignTransform | null) => void;
@@ -20,11 +21,11 @@ type Params = {
 type Overlay = { x: number; y: number; w: number; h: number };
 
 type State =
-  | { kind: "empty" }
   | { kind: "loading" }
   | { kind: "ready"; url: string }
-  | { kind: "composite"; baseImageUrl: string; overlay: Overlay; designUrl: string }
+  | { kind: "composite"; baseImageUrl: string; overlay: Overlay; designUrl: string | null }
   | { kind: "fallback" }
+  | { kind: "blank" }
   | { kind: "error" };
 
 export function PreviewStage({
@@ -32,17 +33,21 @@ export function PreviewStage({
   size,
   color,
   printZoneKey,
+  defaultZoneKey,
   zoneLabel,
   image,
   onDesignTransformChange,
 }: Params) {
-  const [state, setState] = useState<State>({ kind: "empty" });
+  const [state, setState] = useState<State>({ kind: "blank" });
   const requestId = useRef(0);
   const imageUrl = image?.url ?? null;
+  // Mientras el cliente no eligió zona, mostramos igual la prenda usando
+  // la primera zona disponible — así se ve el producto real desde el arranque.
+  const effectiveZoneKey = printZoneKey ?? defaultZoneKey;
 
   useEffect(() => {
-    if (!printZoneKey || !imageUrl) {
-      setState({ kind: "empty" });
+    if (!effectiveZoneKey) {
+      setState({ kind: "blank" });
       return;
     }
 
@@ -52,7 +57,13 @@ export function PreviewStage({
     fetch("/api/mockup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ productId, size: size ?? "M", color, printZoneKey, imageUrl }),
+      body: JSON.stringify({
+        productId,
+        size,
+        color,
+        printZoneKey: effectiveZoneKey,
+        imageUrl,
+      }),
     })
       .then((r) => r.json())
       .then((data) => {
@@ -66,37 +77,54 @@ export function PreviewStage({
           });
         } else if (data.available && data.status === "completed" && data.mockupUrl) {
           setState({ kind: "ready", url: data.mockupUrl });
-        } else {
+        } else if (imageUrl && printZoneKey && zoneLabel) {
           setState({ kind: "fallback" });
+        } else {
+          setState({ kind: "blank" });
         }
       })
       .catch(() => {
         if (requestId.current === id) setState({ kind: "error" });
       });
-  }, [productId, size, color, printZoneKey, imageUrl]);
+  }, [productId, size, color, effectiveZoneKey, imageUrl, printZoneKey, zoneLabel]);
 
   useEffect(() => {
-    if (state.kind !== "composite") onDesignTransformChange?.(null);
+    if (state.kind !== "composite" || !state.designUrl) onDesignTransformChange?.(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.kind]);
-
-  const missing: string[] = [];
-  if (!imageUrl) missing.push("una imagen");
-  if (!printZoneKey) missing.push("dónde va el estampado");
+  }, [state.kind, state.kind === "composite" ? state.designUrl : null]);
 
   if (state.kind === "composite") {
+    const zoneChosen = !!printZoneKey;
     return (
       <div className="overflow-hidden rounded-2xl border border-line bg-panel">
         <div className="relative">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={state.baseImageUrl} alt="Prenda" className="block h-auto w-full" />
-          <DesignAdjuster designUrl={state.designUrl} overlay={state.overlay} onChange={onDesignTransformChange} />
+          {state.designUrl ? (
+            <DesignAdjuster designUrl={state.designUrl} overlay={state.overlay} onChange={onDesignTransformChange} />
+          ) : (
+            <div
+              className="absolute flex items-center justify-center border border-dashed border-ink-soft/40 bg-ink/5"
+              style={{
+                left: `${state.overlay.x}%`,
+                top: `${state.overlay.y}%`,
+                width: `${state.overlay.w}%`,
+                height: `${state.overlay.h}%`,
+              }}
+            >
+              {zoneChosen && (
+                <span className="px-2 text-center text-[11px] text-ink-soft/70">Tu diseño va acá</span>
+              )}
+            </div>
+          )}
           <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-dark/85 px-3 py-1 text-xs text-paper">
             <Sparkles size={12} className="text-lime" /> Foto real
           </span>
         </div>
         <p className="border-t border-line px-4 py-2.5 text-xs text-ink-soft">
-          Arrastrá tu diseño para moverlo, y el círculo de la esquina para agrandarlo o rotarlo.
+          {state.designUrl
+            ? "Arrastrá tu diseño para moverlo, y el círculo de la esquina para agrandarlo o rotarlo."
+            : "Subí tu imagen para verla puesta acá."}
         </p>
       </div>
     );
@@ -128,10 +156,7 @@ export function PreviewStage({
               className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-ink-soft"
             >
               <Loader2 className="h-9 w-9 animate-spin text-accent" />
-              <p className="text-sm">Generando tu prenda...</p>
-              <p className="max-w-52 text-center text-xs text-ink-soft/70">
-                Puede tardar unos segundos, estamos armando la foto real.
-              </p>
+              <p className="text-sm">Cargando...</p>
             </motion.div>
           ) : state.kind === "fallback" && image && zoneLabel ? (
             <motion.div
@@ -160,23 +185,19 @@ export function PreviewStage({
               className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-8 text-center"
             >
               <p className="text-sm text-ink-soft">
-                No pudimos generar la vista previa ahora, pero tu pedido se procesa igual.
+                No pudimos cargar la vista previa ahora, pero tu pedido se procesa igual.
               </p>
             </motion.div>
           ) : (
             <motion.div
-              key="empty"
+              key="blank"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-8 text-center"
             >
               <ImagePlus size={28} strokeWidth={1.5} className="text-ink-soft/60" />
-              <p className="text-sm text-ink-soft">
-                {missing.length > 0
-                  ? `Falta elegir ${missing.join(" y ")} para ver cómo queda`
-                  : "Elegí tu diseño para ver cómo queda"}
-              </p>
+              <p className="text-sm text-ink-soft">Todavía no hay foto cargada de esta prenda</p>
             </motion.div>
           )}
         </AnimatePresence>
