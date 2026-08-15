@@ -7,10 +7,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import clsx from "clsx";
 import { Check, ChevronLeft, ChevronRight } from "lucide-react";
 import type { DesignCatalogItem, PrintZone, Product, ProductColor, ProductSize } from "@/lib/types";
-import { GarmentZonePicker } from "./GarmentZonePicker";
 import { type UploadedImage } from "./ImageUploader";
 import { DesignPicker } from "./DesignPicker";
-import { MockupPreview } from "./MockupPreview";
+import { PreviewStage } from "./PreviewStage";
+import { ZoneSelector } from "./ZoneSelector";
 import { SizeGuideModal } from "./SizeGuideModal";
 
 const STEPS = ["Prenda", "Talle y color", "Diseño", "Tus datos"] as const;
@@ -212,16 +212,17 @@ export function OrderWizard({
             </div>
           )}
 
-          {step === 2 && (
+          {step === 2 && product && (
             <div className="grid gap-10 lg:grid-cols-[1fr_1.15fr] lg:items-start">
               <div className="lg:sticky lg:top-24">
                 <p className="mb-3 text-sm font-medium">Vista previa</p>
-                <GarmentZonePicker
-                  zones={printZones}
-                  value={zoneKey}
-                  onChange={setZoneKey}
+                <PreviewStage
+                  productId={product.id}
+                  size={size}
+                  color={color}
+                  printZoneKey={zoneKey}
+                  zoneLabel={zone?.label ?? null}
                   image={image}
-                  colorHex={productColors.find((c) => c.name === color)?.hex}
                 />
               </div>
               <div className="space-y-8">
@@ -229,15 +230,10 @@ export function OrderWizard({
                   <p className="mb-3 text-sm font-medium">Tu imagen</p>
                   <DesignPicker designs={designs} value={image} onChange={setImage} />
                 </div>
-                {product && (
-                  <MockupPreview
-                    productId={product.id}
-                    size={size}
-                    color={color}
-                    printZoneKey={zoneKey}
-                    imageUrl={image?.url ?? null}
-                  />
-                )}
+                <div>
+                  <p className="mb-3 text-sm font-medium">Ubicación del estampado</p>
+                  <ZoneSelector zones={printZones} value={zoneKey} onChange={setZoneKey} />
+                </div>
               </div>
             </div>
           )}
