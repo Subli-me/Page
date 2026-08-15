@@ -112,7 +112,9 @@ supabase/schema.sql       → schema completo de la base de datos
 ## Qué se edita desde /admin
 
 - **`/admin`** — pedidos entrantes, imagen lista para producción, cambio de estado.
-- **`/admin/productos`** — precio de venta y costo de cada prenda, extra por zona de estampado.
+- **`/admin/productos`** — alta y baja de prendas, precio/costo, talles y
+  colores por prenda, y alta/edición/baja de zonas de estampado. Ya no hace
+  falta tocar Supabase para nada de esto.
 - **`/admin/sitio`** — logo (texto o imagen), colores de marca, navegación,
   textos del hero, la cinta animada, los 3 pasos de "cómo funciona", los
   textos de la página de pedido, el mensaje de confirmación, el footer y el
@@ -121,8 +123,3 @@ supabase/schema.sql       → schema completo de la base de datos
 - **`/admin/disenos`** — catálogo de diseños propios (subís imágenes vos). En
   `/pedido`, el cliente puede elegir entre subir su propia imagen o elegir uno
   de estos diseños ya cargados.
-
-Agregar prendas, talles y colores nuevos (no solo editar los existentes) se
-hace directo en la tabla de Supabase (`products`, `product_sizes`,
-`product_colors`) desde el Table Editor — es más rápido que construir un
-formulario de alta para algo que se hace pocas veces.
