@@ -60,7 +60,10 @@ export function SiteSettingsAdmin({ initial }: { initial: SiteSettings }) {
       </Section>
 
       <Section title="Navegación">
-        <EditableText label="Etiqueta del link a catálogo" value={settings.nav_catalog_label} onSave={(v) => save("nav_catalog_label", v)} />
+        <div className="grid gap-6 sm:grid-cols-2">
+          <EditableText label="Etiqueta del link a catálogo" value={settings.nav_catalog_label} onSave={(v) => save("nav_catalog_label", v)} />
+          <EditableText label="Etiqueta del link a '¿Cómo estampamos?'" value={settings.nav_process_label} onSave={(v) => save("nav_process_label", v)} />
+        </div>
       </Section>
 
       <Section title="Cinta animada (marquee)">
@@ -111,6 +114,33 @@ export function SiteSettingsAdmin({ initial }: { initial: SiteSettings }) {
         <div className="mt-6 grid gap-6 sm:grid-cols-2">
           <EditableText label="Tagline" value={settings.footer_tagline} onSave={(v) => save("footer_tagline", v)} />
           <EditableText label="Sufijo del copyright (© año — ___)" value={settings.footer_copyright_suffix} onSave={(v) => save("footer_copyright_suffix", v)} />
+        </div>
+      </Section>
+
+      <Section title="Página '¿Cómo estampamos?'">
+        <div className="grid gap-6 sm:grid-cols-2">
+          <EditableText label="Título" value={settings.process_title} onSave={(v) => save("process_title", v)} />
+          <EditableText label="Subtítulo" value={settings.process_subtitle} onSave={(v) => save("process_subtitle", v)} />
+        </div>
+        <div className="mt-6 space-y-6">
+          {([1, 2, 3, 4] as const).map((n) => (
+            <div key={n} className="grid gap-4 sm:grid-cols-2">
+              <EditableText
+                label={`Paso ${n} — título`}
+                value={settings[`process_step${n}_title`]}
+                onSave={(v) => save(`process_step${n}_title`, v)}
+              />
+              <EditableText
+                label={`Paso ${n} — texto`}
+                value={settings[`process_step${n}_text`]}
+                onSave={(v) => save(`process_step${n}_text`, v)}
+              />
+            </div>
+          ))}
+        </div>
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <EditableText label="Título de cuidados" value={settings.care_title} onSave={(v) => save("care_title", v)} />
+          <EditableText label="Texto de cuidados" value={settings.care_text} onSave={(v) => save("care_text", v)} multiline />
         </div>
       </Section>
 

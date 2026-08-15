@@ -104,6 +104,20 @@ export const DEMO_SETTINGS: SiteSettings = {
     "Remeras, buzos y chombas estampadas con tu diseño. Subí tu imagen, elegí el estampado y lo mandamos a imprimir.",
 
   nav_catalog_label: "Catálogo",
+  nav_process_label: "Cómo estampamos",
+
+  process_title: "Cómo estampamos",
+  process_subtitle: "Del archivo a la prenda terminada, así es el proceso DTF que usamos en cada pedido.",
+  process_step1_title: "Preparamos el archivo",
+  process_step1_text: "Ajustamos tu imagen a la resolución y el tamaño que pediste para que el estampado salga nítido.",
+  process_step2_title: "Imprimimos en film DTF",
+  process_step2_text: "El diseño se imprime en una película especial con tintas resistentes al lavado.",
+  process_step3_title: "Aplicamos con calor",
+  process_step3_text: "Con una prensa térmica, transferimos el diseño a la prenda a alta temperatura y presión.",
+  process_step4_title: "Control y envío",
+  process_step4_text: "Revisamos cada prenda antes de mandarla, para que llegue perfecta.",
+  care_title: "Cuidados de la prenda estampada",
+  care_text: "Lavá del revés con agua fría, no uses lavandina y evitá planchar directo sobre el estampado. Así te dura mucho más.",
 
   pedido_badge: "Pedido personalizado",
   pedido_title: "Armemos tu prenda",

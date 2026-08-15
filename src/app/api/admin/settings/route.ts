@@ -34,6 +34,19 @@ const ALLOWED_FIELDS = [
   "confirmation_title",
   "confirmation_message",
   "footer_copyright_suffix",
+  "nav_process_label",
+  "process_title",
+  "process_subtitle",
+  "process_step1_title",
+  "process_step1_text",
+  "process_step2_title",
+  "process_step2_text",
+  "process_step3_title",
+  "process_step3_text",
+  "process_step4_title",
+  "process_step4_text",
+  "care_title",
+  "care_text",
 ];
 
 export async function PATCH(req: Request) {

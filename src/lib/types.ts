@@ -88,6 +88,20 @@ export type SiteSettings = {
   seo_description: string;
 
   nav_catalog_label: string;
+  nav_process_label: string;
+
+  process_title: string;
+  process_subtitle: string;
+  process_step1_title: string;
+  process_step1_text: string;
+  process_step2_title: string;
+  process_step2_text: string;
+  process_step3_title: string;
+  process_step3_text: string;
+  process_step4_title: string;
+  process_step4_text: string;
+  care_title: string;
+  care_text: string;
 
   pedido_badge: string;
   pedido_title: string;

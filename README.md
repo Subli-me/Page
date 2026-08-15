@@ -32,8 +32,9 @@ npm install
 
    Si ya habías ejecutado `migration_site_settings.sql` antes de esta versión,
    corré también [`supabase/migration_site_settings_2.sql`](supabase/migration_site_settings_2.sql)
-   para sumar las columnas de SEO/navegación/confirmación que se agregaron después
-   (en un Supabase nuevo no hace falta, ya están en el `schema.sql`/`migration_site_settings.sql` actualizado).
+   y [`supabase/migration_site_settings_3.sql`](supabase/migration_site_settings_3.sql)
+   para sumar las columnas que se agregaron después (en un Supabase nuevo no
+   hace falta, ya están todas en el `migration_site_settings.sql` actualizado).
 3. En **Authentication → Users**, creá manualmente tu usuario admin (email + contraseña).
    Es el único que va a poder loguearse en `/admin`.
 4. Copiá `Project URL`, `anon public key` y `service_role key` desde
@@ -118,7 +119,8 @@ supabase/schema.sql       → schema completo de la base de datos
 - **`/admin/sitio`** — logo (texto o imagen), colores de marca, navegación,
   textos del hero, la cinta animada, los 3 pasos de "cómo funciona", los
   textos de la página de pedido, el mensaje de confirmación, el footer y el
-  SEO (título/descripción de la pestaña del navegador). Todo el sitio público
+  los 4 pasos y cuidados de la página "¿Cómo estampamos?", y el SEO
+  (título/descripción de la pestaña del navegador). Todo el sitio público
   lee estos valores en vivo, sin necesidad de tocar código ni redeployar.
 - **`/admin/disenos`** — catálogo de diseños propios (subís imágenes vos). En
   `/pedido`, el cliente puede elegir entre subir su propia imagen o elegir uno

@@ -46,6 +46,21 @@ create table if not exists site_settings (
 
   -- Navegación
   nav_catalog_label text not null default 'Catálogo',
+  nav_process_label text not null default 'Cómo estampamos',
+
+  -- Página /como-estampamos
+  process_title text not null default 'Cómo estampamos',
+  process_subtitle text not null default 'Del archivo a la prenda terminada, así es el proceso DTF que usamos en cada pedido.',
+  process_step1_title text not null default 'Preparamos el archivo',
+  process_step1_text text not null default 'Ajustamos tu imagen a la resolución y el tamaño que pediste para que el estampado salga nítido.',
+  process_step2_title text not null default 'Imprimimos en film DTF',
+  process_step2_text text not null default 'El diseño se imprime en una película especial con tintas resistentes al lavado.',
+  process_step3_title text not null default 'Aplicamos con calor',
+  process_step3_text text not null default 'Con una prensa térmica, transferimos el diseño a la prenda a alta temperatura y presión.',
+  process_step4_title text not null default 'Control y envío',
+  process_step4_text text not null default 'Revisamos cada prenda antes de mandarla, para que llegue perfecta.',
+  care_title text not null default 'Cuidados de la prenda estampada',
+  care_text text not null default 'Lavá del revés con agua fría, no uses lavandina y evitá planchar directo sobre el estampado. Así te dura mucho más.',
 
   -- Página /pedido
   pedido_badge text not null default 'Pedido personalizado',

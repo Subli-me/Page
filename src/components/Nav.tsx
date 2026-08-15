@@ -24,6 +24,12 @@ export async function Nav() {
             {settings.nav_catalog_label}
           </Link>
           <Link
+            href="/como-estampamos"
+            className="link-underline hidden text-paper/70 transition-colors hover:text-paper sm:inline"
+          >
+            {settings.nav_process_label}
+          </Link>
+          <Link
             href="/pedido"
             className="group inline-flex items-center gap-1.5 rounded-full bg-lime px-5 py-2.5 font-medium text-dark transition-transform hover:-translate-y-0.5"
           >
