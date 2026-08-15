@@ -56,24 +56,27 @@ npm install
 ### 4.1. (Opcional pero recomendado) Vista previa realista con Printful
 
 El paso "Diseño" del pedido muestra automáticamente cómo queda la imagen puesta
-sobre la prenda real, usando el Mockup Generator de Printful (gratis, no hace
-falta vender a través de ellos — se usa solo para generar la imagen de preview).
+sobre la prenda real, usando la **Templates API** de Printful — el mismo
+material (foto de la prenda en cada color + capa de sombras de tela + área de
+impresión exacta) que ellos usan en su propio editor "Empezar a diseñar". Es
+gratis y no hace falta vender a través de ellos.
 
 1. Creá una cuenta gratis en [printful.com](https://www.printful.com).
-2. **Settings → API** → generá un Private Token → es tu `PRINTFUL_API_KEY`.
-3. Para cada prenda tuya, buscá en su catálogo (`/mockup-generator` en su sitio,
-   o el endpoint `GET /products` de su API) el producto blank más parecido al
-   que vos imprimís (ej: remera Bella+Canvas 3001) y anotá su `product_id`.
-4. Para cada combinación de talle/color que ofrezcas, anotá el `variant_id`
-   correspondiente (cada talle+color es una variante distinta en Printful).
-5. Ejecutá [`supabase/migration_printful.sql`](supabase/migration_printful.sql)
+2. Andá a [developers.printful.com](https://developers.printful.com) → **Your tokens** → generá un Private Token → es tu `PRINTFUL_API_KEY`.
+3. Conseguí el ID de tu tienda: `curl -H "Authorization: Bearer TU_TOKEN" https://api.printful.com/stores` → es tu `PRINTFUL_STORE_ID`.
+4. Para cada prenda tuya, buscá en su catálogo (`GET /products`) el producto
+   blank más parecido al que vos imprimís (ej: remera Bella+Canvas 3001,
+   `product_id` 71) y anotalo.
+5. Para cada combinación de talle/color que ofrezcas, anotá el `variant_id`
+   correspondiente (`GET /products/{id}` devuelve todas las variantes).
+6. Ejecutá [`supabase/migration_printful.sql`](supabase/migration_printful.sql)
    en el SQL Editor de Supabase.
-6. Cargá esos IDs en las tablas `products.printful_product_id` y
+7. Cargá esos IDs en las tablas `products.printful_product_id` y
    `product_variants` (product_id, size, color, printful_variant_id) desde el
    Table Editor de Supabase.
 
-Si no configurás esto, el pedido funciona igual — simplemente no se muestra
-la vista previa fotorrealista (se usa el selector de zona esquemático).
+Si no configurás esto (o para prendas que no están en su catálogo), el pedido
+funciona igual con el mockup propio (`/admin/mockups`) o el fallback de texto.
 
 ### 5. Variables de entorno
 

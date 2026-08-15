@@ -22,9 +22,14 @@ type Overlay = { x: number; y: number; w: number; h: number };
 
 type State =
   | { kind: "loading" }
-  | { kind: "ready"; url: string }
-  | { kind: "composite"; baseImageUrl: string; overlay: Overlay; designUrl: string | null }
-  | { kind: "blankPhoto"; url: string }
+  | {
+      kind: "composite";
+      baseImageUrl: string | null;
+      baseColor: string | null;
+      foregroundUrl: string | null;
+      overlay: Overlay;
+      designUrl: string | null;
+    }
   | { kind: "fallback" }
   | { kind: "blank" }
   | { kind: "error" };
@@ -69,18 +74,16 @@ export function PreviewStage({
       .then((r) => r.json())
       .then((data) => {
         if (requestId.current !== id) return;
-        if (data.available && data.source === "own" && data.mockup) {
+        if (data.available && data.mockup) {
           setState({
             kind: "composite",
-            baseImageUrl: data.mockup.baseImageUrl,
+            baseImageUrl: data.mockup.baseImageUrl ?? null,
+            baseColor: data.mockup.baseColor ?? null,
+            foregroundUrl: data.mockup.foregroundUrl ?? null,
             overlay: data.mockup.overlay,
             designUrl: imageUrl,
           });
-        } else if (data.available && data.status === "completed" && data.mockupUrl) {
-          setState({ kind: "ready", url: data.mockupUrl });
-        } else if (data.available && data.source === "printful-blank" && data.blankImageUrl) {
-          setState({ kind: "blankPhoto", url: data.blankImageUrl });
-        } else if (imageUrl && printZoneKey && zoneLabel) {
+        } else if (data.canFallback && imageUrl && printZoneKey && zoneLabel) {
           setState({ kind: "fallback" });
         } else {
           setState({ kind: "blank" });
@@ -101,8 +104,12 @@ export function PreviewStage({
     return (
       <div className="overflow-hidden rounded-2xl border border-line bg-panel">
         <div className="relative">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={state.baseImageUrl} alt="Prenda" className="block h-auto w-full" />
+          {state.baseImageUrl ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img src={state.baseImageUrl} alt="Prenda" className="block h-auto w-full" />
+          ) : (
+            <div className="aspect-square w-full" style={{ backgroundColor: state.baseColor ?? "#f5f5f5" }} />
+          )}
           {state.designUrl ? (
             <DesignAdjuster designUrl={state.designUrl} overlay={state.overlay} onChange={onDesignTransformChange} />
           ) : (
@@ -119,6 +126,19 @@ export function PreviewStage({
                 <span className="px-2 text-center text-[11px] text-ink-soft/70">Tu diseño va acá</span>
               )}
             </div>
+          )}
+          {/* Sombras/pliegues de la tela por encima del diseño, para que se vea puesto de verdad.
+              Se reutiliza la misma capa para todos los colores, por eso va con blend "multiply"
+              sobre el color/foto de base en vez de superponerse plana. */}
+          {state.foregroundUrl && (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={state.foregroundUrl}
+              alt=""
+              className="pointer-events-none absolute inset-0 h-full w-full"
+              style={{ mixBlendMode: "multiply" }}
+              aria-hidden
+            />
           )}
           <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-dark/85 px-3 py-1 text-xs text-paper">
             <Sparkles size={12} className="text-lime" /> Foto real
@@ -137,33 +157,7 @@ export function PreviewStage({
     <div className="overflow-hidden rounded-2xl border border-line bg-panel">
       <div className="relative aspect-4/5 bg-accent-soft/30">
         <AnimatePresence mode="wait">
-          {state.kind === "ready" ? (
-            <motion.div
-              key="ready"
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-              className="absolute inset-0"
-            >
-              <Image src={state.url} alt="Vista previa realista de tu prenda" fill className="object-contain" priority />
-              <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-dark/85 px-3 py-1 text-xs text-paper">
-                <Sparkles size={12} className="text-lime" /> Foto real
-              </span>
-            </motion.div>
-          ) : state.kind === "blankPhoto" ? (
-            <motion.div
-              key="blankPhoto"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0"
-            >
-              <Image src={state.url} alt="Foto de la prenda" fill className="object-contain" priority />
-              <span className="absolute bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-dark/85 px-3 py-1 text-xs text-paper">
-                Subí tu imagen para personalizarla
-              </span>
-            </motion.div>
-          ) : state.kind === "loading" ? (
+          {state.kind === "loading" ? (
             <motion.div
               key="loading"
               initial={{ opacity: 0 }}

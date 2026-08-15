@@ -4,94 +4,50 @@ function headers() {
   return {
     Authorization: `Bearer ${process.env.PRINTFUL_API_KEY}`,
     "Content-Type": "application/json",
+    ...(process.env.PRINTFUL_STORE_ID ? { "X-PF-Store-Id": process.env.PRINTFUL_STORE_ID } : {}),
   };
 }
 
-type CreateTaskParams = {
-  printfulProductId: number;
-  variantIds: number[];
-  placement: string;
-  imageUrl: string;
+type TemplateDetail = {
+  template_id: number;
+  image_url: string;
+  // Para algunos colores no viene foto de fondo, solo un color sólido
+  // (la misma capa de sombras se reutiliza para todos los colores).
+  background_url: string | null;
+  background_color: string;
+  template_width: number;
+  template_height: number;
+  print_area_width: number;
+  print_area_height: number;
+  print_area_top: number;
+  print_area_left: number;
 };
 
-// Dispara la generación del mockup. Printful la procesa en segundo plano.
-export async function createMockupTask({
-  printfulProductId,
-  variantIds,
-  placement,
-  imageUrl,
-}: CreateTaskParams): Promise<string> {
-  const res = await fetch(
-    `${PRINTFUL_API}/mockup-generator/create-task/${printfulProductId}`,
-    {
-      method: "POST",
-      headers: headers(),
-      body: JSON.stringify({
-        variant_ids: variantIds,
-        format: "jpg",
-        files: [{ placement, image_url: imageUrl }],
-      }),
-    }
-  );
-
-  if (!res.ok) {
-    throw new Error(`Printful create-task falló: ${res.status} ${await res.text()}`);
-  }
-
-  const json = await res.json();
-  return json.result.task_key as string;
-}
-
-export type MockupResult = {
-  status: "pending" | "completed" | "failed";
-  mockupUrl?: string;
+type TemplatesResponse = {
+  variant_mapping: { variant_id: number; templates: { placement: string; template_id: number }[] }[];
+  templates: TemplateDetail[];
 };
 
-// Consulta el estado de la tarea. Printful tarda unos segundos en generar la imagen.
-export async function getMockupTask(taskKey: string): Promise<MockupResult> {
-  const res = await fetch(`${PRINTFUL_API}/mockup-generator/task?task_key=${taskKey}`, {
+// Las mismas plantillas (foto de la prenda en ese color + capa de sombras +
+// área de impresión exacta) que usa Printful en su propio "Empezar a
+// diseñar". Nos permite armar la vista previa en vivo, del lado del cliente,
+// sin llamar a su generador de mockups (que es asíncrono y más lento).
+export async function getVariantTemplate(
+  printfulProductId: number,
+  variantId: number,
+  placement: string
+): Promise<TemplateDetail | null> {
+  const res = await fetch(`${PRINTFUL_API}/mockup-generator/templates/${printfulProductId}`, {
     headers: headers(),
   });
-
-  if (!res.ok) {
-    throw new Error(`Printful get-task falló: ${res.status} ${await res.text()}`);
-  }
+  if (!res.ok) return null;
 
   const json = await res.json();
-  const result = json.result;
+  const data: TemplatesResponse = json.result;
 
-  if (result.status === "completed") {
-    return { status: "completed", mockupUrl: result.mockups?.[0]?.mockup_url };
-  }
-  if (result.status === "failed") {
-    return { status: "failed" };
-  }
-  return { status: "pending" };
-}
+  const mapping = data.variant_mapping.find((m) => m.variant_id === variantId);
+  const templateRef = mapping?.templates.find((t) => t.placement === placement);
+  if (!templateRef) return null;
 
-// Foto de stock del catálogo de Printful (sin ningún diseño aplicado).
-// Sirve como placeholder "en blanco" mientras el cliente todavía no subió nada.
-export async function getCatalogProductImage(printfulProductId: number): Promise<string | null> {
-  try {
-    const res = await fetch(`${PRINTFUL_API}/products/${printfulProductId}`, {
-      headers: headers(),
-    });
-    if (!res.ok) return null;
-    const json = await res.json();
-    return json.result?.product?.image ?? null;
-  } catch {
-    return null;
-  }
-}
-
-// Espera hasta ~15s a que el mockup esté listo, con reintentos cortos.
-export async function createAndWaitMockup(params: CreateTaskParams): Promise<MockupResult> {
-  const taskKey = await createMockupTask(params);
-
-  for (let i = 0; i < 8; i++) {
-    const result = await getMockupTask(taskKey);
-    if (result.status !== "pending") return result;
-    await new Promise((r) => setTimeout(r, 1800));
-  }
-  return { status: "pending" };
+  return data.templates.find((t) => t.template_id === templateRef.template_id) ?? null;
 }
