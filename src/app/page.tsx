@@ -57,7 +57,12 @@ export default async function Home() {
             </div>
 
             {settings.hero_image_url && (
-              <HeroImage src={settings.hero_image_url} alt={settings.hero_title_line1} />
+              <HeroImage
+                src={settings.hero_image_url}
+                alt={settings.hero_title_line1}
+                logoUrl={settings.logo_url}
+                logoAlt={settings.logo_text}
+              />
             )}
           </div>
         </section>

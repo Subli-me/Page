@@ -3,7 +3,17 @@
 import Image from "next/image";
 import { motion } from "framer-motion";
 
-export function HeroImage({ src, alt }: { src: string; alt: string }) {
+export function HeroImage({
+  src,
+  alt,
+  logoUrl,
+  logoAlt,
+}: {
+  src: string;
+  alt: string;
+  logoUrl?: string | null;
+  logoAlt?: string;
+}) {
   return (
     <motion.div
       initial={{ opacity: 0, x: 24, rotate: 3 }}
@@ -17,6 +27,23 @@ export function HeroImage({ src, alt }: { src: string; alt: string }) {
       <span className="absolute left-4 top-4 rounded-full bg-lime px-3 py-1 text-xs font-medium text-dark">
         Hecho con DTF
       </span>
+
+      {logoUrl && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.7, rotate: -12 }}
+          animate={{ opacity: 1, scale: 1, rotate: -8 }}
+          transition={{ duration: 0.6, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          className="absolute bottom-4 right-4 flex h-24 w-24 items-center justify-center rounded-full border-2 border-paper/80 bg-paper p-2 shadow-xl sm:h-28 sm:w-28"
+        >
+          <Image
+            src={logoUrl}
+            alt={logoAlt ?? "Logo"}
+            width={200}
+            height={200}
+            className="h-full w-full rounded-full object-contain"
+          />
+        </motion.div>
+      )}
     </motion.div>
   );
 }
