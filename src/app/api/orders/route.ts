@@ -14,6 +14,10 @@ const orderSchema = z.object({
   customerEmail: z.string().email(),
   customerPhone: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
+  designTransform: z
+    .object({ tx: z.number(), ty: z.number(), scale: z.number(), rotation: z.number() })
+    .optional()
+    .nullable(),
 });
 
 export async function POST(req: Request) {
@@ -65,6 +69,7 @@ export async function POST(req: Request) {
       customer_phone: data.customerPhone ?? null,
       notes: data.notes ?? null,
       total_price: totalPrice,
+      design_transform: data.designTransform ?? null,
     })
     .select()
     .single();

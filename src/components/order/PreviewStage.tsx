@@ -5,6 +5,7 @@ import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { ImagePlus, Loader2, Sparkles } from "lucide-react";
 import type { UploadedImage } from "./ImageUploader";
+import { DesignAdjuster, type DesignTransform } from "./DesignAdjuster";
 
 type Params = {
   productId: string;
@@ -13,6 +14,7 @@ type Params = {
   printZoneKey: string | null;
   zoneLabel: string | null;
   image: UploadedImage | null;
+  onDesignTransformChange?: (t: DesignTransform | null) => void;
 };
 
 type Overlay = { x: number; y: number; w: number; h: number };
@@ -25,7 +27,15 @@ type State =
   | { kind: "fallback" }
   | { kind: "error" };
 
-export function PreviewStage({ productId, size, color, printZoneKey, zoneLabel, image }: Params) {
+export function PreviewStage({
+  productId,
+  size,
+  color,
+  printZoneKey,
+  zoneLabel,
+  image,
+  onDesignTransformChange,
+}: Params) {
   const [state, setState] = useState<State>({ kind: "empty" });
   const requestId = useRef(0);
   const imageUrl = image?.url ?? null;
@@ -65,6 +75,11 @@ export function PreviewStage({ productId, size, color, printZoneKey, zoneLabel, 
       });
   }, [productId, size, color, printZoneKey, imageUrl]);
 
+  useEffect(() => {
+    if (state.kind !== "composite") onDesignTransformChange?.(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.kind]);
+
   const missing: string[] = [];
   if (!imageUrl) missing.push("una imagen");
   if (!printZoneKey) missing.push("dónde va el estampado");
@@ -75,22 +90,14 @@ export function PreviewStage({ productId, size, color, printZoneKey, zoneLabel, 
         <div className="relative">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={state.baseImageUrl} alt="Prenda" className="block h-auto w-full" />
-          <div
-            className="absolute overflow-hidden"
-            style={{
-              left: `${state.overlay.x}%`,
-              top: `${state.overlay.y}%`,
-              width: `${state.overlay.w}%`,
-              height: `${state.overlay.h}%`,
-            }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={state.designUrl} alt="Tu diseño" className="h-full w-full object-cover" />
-          </div>
+          <DesignAdjuster designUrl={state.designUrl} overlay={state.overlay} onChange={onDesignTransformChange} />
           <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-dark/85 px-3 py-1 text-xs text-paper">
             <Sparkles size={12} className="text-lime" /> Foto real
           </span>
         </div>
+        <p className="border-t border-line px-4 py-2.5 text-xs text-ink-soft">
+          Arrastrá tu diseño para moverlo, y el círculo de la esquina para agrandarlo o rotarlo.
+        </p>
       </div>
     );
   }

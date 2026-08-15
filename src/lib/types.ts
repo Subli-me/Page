@@ -140,6 +140,7 @@ export type Order = {
   notes: string | null;
   status: OrderStatus;
   total_price: number | null;
+  design_transform: { tx: number; ty: number; scale: number; rotation: number } | null;
   created_at: string;
   updated_at: string;
 };

@@ -10,6 +10,7 @@ import type { DesignCatalogItem, PrintZone, Product, ProductColor, ProductSize }
 import { type UploadedImage } from "./ImageUploader";
 import { DesignPicker } from "./DesignPicker";
 import { PreviewStage } from "./PreviewStage";
+import { type DesignTransform } from "./DesignAdjuster";
 import { ZoneSelector } from "./ZoneSelector";
 import { SizeGuideModal } from "./SizeGuideModal";
 
@@ -43,6 +44,7 @@ export function OrderWizard({
   const [color, setColor] = useState<string | null>(null);
   const [image, setImage] = useState<UploadedImage | null>(null);
   const [zoneKey, setZoneKey] = useState<string | null>(null);
+  const [designTransform, setDesignTransform] = useState<DesignTransform | null>(null);
   const [contact, setContact] = useState({ name: "", email: "", phone: "", notes: "" });
   const [status, setStatus] = useState<"idle" | "submitting" | "done" | "error">("idle");
 
@@ -82,6 +84,7 @@ export function OrderWizard({
           customerEmail: contact.email,
           customerPhone: contact.phone || null,
           notes: contact.notes || null,
+          designTransform,
         }),
       });
       if (!res.ok) throw new Error();
@@ -223,6 +226,7 @@ export function OrderWizard({
                   printZoneKey={zoneKey}
                   zoneLabel={zone?.label ?? null}
                   image={image}
+                  onDesignTransformChange={setDesignTransform}
                 />
               </div>
               <div className="space-y-8">
