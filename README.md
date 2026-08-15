@@ -32,7 +32,8 @@ npm install
 
    Si ya habías ejecutado `migration_site_settings.sql` antes de esta versión,
    corré también [`supabase/migration_site_settings_2.sql`](supabase/migration_site_settings_2.sql)
-   y [`supabase/migration_site_settings_3.sql`](supabase/migration_site_settings_3.sql)
+   [`supabase/migration_site_settings_3.sql`](supabase/migration_site_settings_3.sql) y
+   [`supabase/migration_site_settings_4.sql`](supabase/migration_site_settings_4.sql)
    para sumar las columnas que se agregaron después (en un Supabase nuevo no
    hace falta, ya están todas en el `migration_site_settings.sql` actualizado).
 3. En **Authentication → Users**, creá manualmente tu usuario admin (email + contraseña).

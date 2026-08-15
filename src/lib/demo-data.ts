@@ -81,6 +81,7 @@ export const DEMO_SETTINGS: SiteSettings = {
   hero_subtitle:
     "Subí tu imagen, elegí la prenda y dónde va el estampado. Nosotros nos encargamos de imprimirlo y hacerlo realidad.",
   hero_cta_label: "Crear mi diseño",
+  hero_image_url: "https://images.unsplash.com/photo-1780566035913-9233ca20dc29?w=1200&q=80",
 
   marquee_text: "REMERAS · BUZOS · CHOMBAS · DTF",
 

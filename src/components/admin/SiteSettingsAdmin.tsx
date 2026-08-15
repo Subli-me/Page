@@ -57,6 +57,13 @@ export function SiteSettingsAdmin({ initial }: { initial: SiteSettings }) {
         <div className="mt-6">
           <EditableText label="Subtítulo" value={settings.hero_subtitle} onSave={(v) => save("hero_subtitle", v)} multiline />
         </div>
+        <div className="mt-6">
+          <p className="mb-3 text-sm font-medium">Imagen del hero</p>
+          <ImageUploader
+            value={settings.hero_image_url ? { url: settings.hero_image_url, publicId: "" } : null}
+            onChange={(img) => save("hero_image_url", img?.url ?? null)}
+          />
+        </div>
       </Section>
 
       <Section title="Navegación">

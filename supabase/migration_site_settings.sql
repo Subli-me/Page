@@ -18,6 +18,7 @@ create table if not exists site_settings (
   hero_title_line2 text not null default 'en tu prenda.',
   hero_subtitle text not null default 'Subí tu imagen, elegí la prenda y dónde va el estampado. Nosotros nos encargamos de imprimirlo y hacerlo realidad.',
   hero_cta_label text not null default 'Crear mi diseño',
+  hero_image_url text default 'https://images.unsplash.com/photo-1780566035913-9233ca20dc29?w=1200&q=80',
 
   -- Marquee
   marquee_text text not null default 'REMERAS · BUZOS · CHOMBAS · DTF',

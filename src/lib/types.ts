@@ -66,6 +66,7 @@ export type SiteSettings = {
   hero_title_line2: string;
   hero_subtitle: string;
   hero_cta_label: string;
+  hero_image_url: string | null;
 
   marquee_text: string;
 

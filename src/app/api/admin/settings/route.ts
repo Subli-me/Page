@@ -12,6 +12,7 @@ const ALLOWED_FIELDS = [
   "hero_title_line2",
   "hero_subtitle",
   "hero_cta_label",
+  "hero_image_url",
   "marquee_text",
   "step1_title",
   "step1_text",
