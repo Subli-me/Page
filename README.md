@@ -24,9 +24,10 @@ npm install
 ### 2. Crear proyecto en Supabase
 
 1. Andá a [supabase.com](https://supabase.com) → New Project (free tier).
-2. Abrí el **SQL Editor** y ejecutá el contenido de [`supabase/schema.sql`](supabase/schema.sql).
-   Esto crea las tablas de productos, talles, colores, zonas de estampado y pedidos,
-   con datos de ejemplo.
+2. Abrí el **SQL Editor** y ejecutá, en orden:
+   - [`supabase/schema.sql`](supabase/schema.sql) — productos, talles, colores, zonas de estampado y pedidos.
+   - [`supabase/migration_site_settings.sql`](supabase/migration_site_settings.sql) — configuración editable del sitio (logo, textos, colores).
+   - [`supabase/migration_printful.sql`](supabase/migration_printful.sql) — opcional, para la vista previa fotorrealista.
 3. En **Authentication → Users**, creá manualmente tu usuario admin (email + contraseña).
    Es el único que va a poder loguearse en `/admin`.
 4. Copiá `Project URL`, `anon public key` y `service_role key` desde
@@ -102,10 +103,15 @@ src/lib/                  → clientes de Supabase y Cloudinary, tipos
 supabase/schema.sql       → schema completo de la base de datos
 ```
 
-## Cómo agregar/editar prendas
+## Qué se edita desde /admin
 
-Por ahora, agregar prendas, talles y colores nuevos se hace directo en la
-tabla de Supabase (`products`, `product_sizes`, `product_colors`) desde el
-Table Editor de su panel — es más rápido que construir un formulario para algo
-que cambiás pocas veces. Precios, costos y zonas de estampado sí se editan
-desde `/admin/productos` porque son los valores que cambian seguido.
+- **`/admin`** — pedidos entrantes, imagen lista para producción, cambio de estado.
+- **`/admin/productos`** — precio de venta y costo de cada prenda, extra por zona de estampado.
+- **`/admin/sitio`** — logo (texto o imagen), colores de marca, textos del hero,
+  la cinta animada, los 3 pasos de "cómo funciona" y el footer. Todo el sitio
+  público lee estos valores en vivo, sin necesidad de tocar código ni redeployar.
+
+Agregar prendas, talles y colores nuevos (no solo editar los existentes) se
+hace directo en la tabla de Supabase (`products`, `product_sizes`,
+`product_colors`) desde el Table Editor — es más rápido que construir un
+formulario de alta para algo que se hace pocas veces.

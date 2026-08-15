@@ -1,4 +1,4 @@
-import type { PrintZone, Product, ProductColor, ProductSize } from "@/lib/types";
+import type { PrintZone, Product, ProductColor, ProductSize, SiteSettings } from "@/lib/types";
 
 // Datos de muestra que se usan SOLO cuando no hay un Supabase real configurado
 // (NEXT_PUBLIC_SUPABASE_URL sigue en placeholder). Sirven para ver el sitio
@@ -65,3 +65,37 @@ export const DEMO_ZONES: PrintZone[] = [
   { id: "z3", key: "sleeve_left", label: "Manga izquierda", extra_price: 800, extra_cost: 200, sort_order: 3 },
   { id: "z4", key: "sleeve_right", label: "Manga derecha", extra_price: 800, extra_cost: 200, sort_order: 4 },
 ];
+
+export const DEMO_SETTINGS: SiteSettings = {
+  id: 1,
+  logo_text: "Sublime",
+  logo_url: null,
+  favicon_emoji: "👕",
+
+  color_accent: "#c85a3a",
+  color_lime: "#d8f24a",
+
+  hero_badge: "Estampado DTF a medida",
+  hero_title_line1: "Tu diseño,",
+  hero_title_line2: "en tu prenda.",
+  hero_subtitle:
+    "Subí tu imagen, elegí la prenda y dónde va el estampado. Nosotros nos encargamos de imprimirlo y hacerlo realidad.",
+  hero_cta_label: "Crear mi diseño",
+
+  marquee_text: "REMERAS · BUZOS · CHOMBAS · DTF",
+
+  step1_title: "Elegí la prenda",
+  step1_text: "Remera, buzo o chomba. Talle y color a tu gusto.",
+  step2_title: "Subí tu imagen",
+  step2_text: "Marcá en qué parte de la prenda querés el estampado.",
+  step3_title: "Lo imprimimos",
+  step3_text: "Recibimos tu pedido y lo mandamos directo a producción.",
+
+  footer_headline_line1: "Hagamos algo",
+  footer_headline_line2: "estampado.",
+  footer_tagline: "Remeras · Buzos · Chombas, prenda por prenda.",
+
+  contact_email: null,
+  contact_phone: null,
+  contact_instagram: null,
+};

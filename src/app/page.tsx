@@ -6,27 +6,16 @@ import { Marquee } from "@/components/Marquee";
 import { Reveal } from "@/components/Reveal";
 import { ProductGrid } from "@/components/ProductGrid";
 import { getActiveProducts } from "@/lib/products";
-
-const STEPS = [
-  {
-    n: "01",
-    title: "Elegí la prenda",
-    text: "Remera, buzo o chomba. Talle y color a tu gusto.",
-  },
-  {
-    n: "02",
-    title: "Subí tu imagen",
-    text: "Marcá en qué parte de la prenda querés el estampado.",
-  },
-  {
-    n: "03",
-    title: "Lo imprimimos",
-    text: "Recibimos tu pedido y lo mandamos directo a producción.",
-  },
-];
+import { getSiteSettings } from "@/lib/settings";
 
 export default async function Home() {
-  const products = await getActiveProducts();
+  const [products, settings] = await Promise.all([getActiveProducts(), getSiteSettings()]);
+
+  const steps = [
+    { n: "01", title: settings.step1_title, text: settings.step1_text },
+    { n: "02", title: settings.step2_title, text: settings.step2_text },
+    { n: "03", title: settings.step3_title, text: settings.step3_text },
+  ];
 
   return (
     <>
@@ -37,24 +26,20 @@ export default async function Home() {
         <section className="grain bg-dark text-paper">
           <div className="mx-auto max-w-6xl px-6 pt-20 pb-16 sm:pt-28 sm:pb-24">
             <p className="mb-6 inline-flex items-center gap-2 rounded-full border border-paper/20 px-4 py-1.5 text-xs uppercase tracking-[0.2em] text-lime">
-              Estampado DTF a medida
+              {settings.hero_badge}
             </p>
             <h1 className="max-w-4xl font-display text-6xl leading-[0.95] tracking-tight sm:text-8xl">
-              Tu diseño,
+              {settings.hero_title_line1}
               <br />
-              <span className="italic text-outline">en tu</span>{" "}
-              <span className="italic text-lime">prenda.</span>
+              <span className="italic text-lime">{settings.hero_title_line2}</span>
             </h1>
-            <p className="mt-8 max-w-md text-lg text-paper/60">
-              Subí tu imagen, elegí la prenda y dónde va el estampado. Nosotros
-              nos encargamos de imprimirlo y hacerlo realidad.
-            </p>
+            <p className="mt-8 max-w-md text-lg text-paper/60">{settings.hero_subtitle}</p>
             <div className="mt-10 flex flex-wrap items-center gap-4">
               <Link
                 href="/pedido"
                 className="group inline-flex items-center gap-2 rounded-full bg-lime px-7 py-4 font-medium text-dark transition-transform hover:-translate-y-0.5"
               >
-                Crear mi diseño
+                {settings.hero_cta_label}
                 <ArrowUpRight
                   size={18}
                   className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
@@ -70,7 +55,7 @@ export default async function Home() {
           </div>
         </section>
 
-        <Marquee text="REMERAS · BUZOS · CHOMBAS · DTF" />
+        <Marquee text={settings.marquee_text} />
 
         {/* Cómo funciona */}
         <section className="mx-auto max-w-6xl px-6 py-24">
@@ -80,7 +65,7 @@ export default async function Home() {
             </h2>
           </Reveal>
           <div className="grid gap-12 sm:grid-cols-3">
-            {STEPS.map((s, i) => (
+            {steps.map((s, i) => (
               <Reveal key={s.n} delay={i * 0.1}>
                 <span className="font-display text-6xl italic text-accent/30">{s.n}</span>
                 <h3 className="mt-4 font-display text-2xl">{s.title}</h3>

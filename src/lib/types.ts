@@ -42,6 +42,39 @@ export type OrderStatus =
   | "entregado"
   | "cancelado";
 
+export type SiteSettings = {
+  id: number;
+  logo_text: string;
+  logo_url: string | null;
+  favicon_emoji: string | null;
+
+  color_accent: string;
+  color_lime: string;
+
+  hero_badge: string;
+  hero_title_line1: string;
+  hero_title_line2: string;
+  hero_subtitle: string;
+  hero_cta_label: string;
+
+  marquee_text: string;
+
+  step1_title: string;
+  step1_text: string;
+  step2_title: string;
+  step2_text: string;
+  step3_title: string;
+  step3_text: string;
+
+  footer_headline_line1: string;
+  footer_headline_line2: string;
+  footer_tagline: string;
+
+  contact_email: string | null;
+  contact_phone: string | null;
+  contact_instagram: string | null;
+};
+
 export type Order = {
   id: string;
   product_id: string | null;
