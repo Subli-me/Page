@@ -69,6 +69,21 @@ export async function getMockupTask(taskKey: string): Promise<MockupResult> {
   return { status: "pending" };
 }
 
+// Foto de stock del catálogo de Printful (sin ningún diseño aplicado).
+// Sirve como placeholder "en blanco" mientras el cliente todavía no subió nada.
+export async function getCatalogProductImage(printfulProductId: number): Promise<string | null> {
+  try {
+    const res = await fetch(`${PRINTFUL_API}/products/${printfulProductId}`, {
+      headers: headers(),
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json.result?.product?.image ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // Espera hasta ~15s a que el mockup esté listo, con reintentos cortos.
 export async function createAndWaitMockup(params: CreateTaskParams): Promise<MockupResult> {
   const taskKey = await createMockupTask(params);

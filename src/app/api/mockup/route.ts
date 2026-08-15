@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createServiceClient } from "@/lib/supabase/server";
-import { createAndWaitMockup } from "@/lib/printful";
+import { createAndWaitMockup, getCatalogProductImage } from "@/lib/printful";
 
 const schema = z.object({
   productId: z.string().uuid(),
@@ -48,12 +48,30 @@ export async function POST(req: Request) {
     });
   }
 
-  // 2) Si no hay mockup propio, probamos con Printful (si está configurado y mapeado).
-  // Printful necesita el archivo de imagen y el talle para generar la foto.
-  if (!process.env.PRINTFUL_API_KEY || !imageUrl || !size) {
+  if (!process.env.PRINTFUL_API_KEY) {
     return NextResponse.json({ available: false });
   }
 
+  const { data: product } = await supabase
+    .from("products")
+    .select("printful_product_id")
+    .eq("id", productId)
+    .single();
+
+  // 2) Sin imagen todavía: mostramos la foto de stock del catálogo de Printful
+  // (sin ningún diseño aplicado), para no dejar la vista previa vacía.
+  if (!imageUrl || !size) {
+    if (product?.printful_product_id) {
+      const blankImageUrl = await getCatalogProductImage(product.printful_product_id);
+      if (blankImageUrl) {
+        return NextResponse.json({ available: true, source: "printful-blank", blankImageUrl });
+      }
+    }
+    return NextResponse.json({ available: false });
+  }
+
+  // 3) Con imagen + talle: generamos el mockup real con el diseño puesto,
+  // si la prenda/talle/color está mapeada a una variante de Printful.
   let variantQuery = supabase
     .from("product_variants")
     .select("printful_variant_id")
@@ -61,8 +79,7 @@ export async function POST(req: Request) {
     .eq("size", size);
   variantQuery = color ? variantQuery.eq("color", color) : variantQuery.is("color", null);
 
-  const [{ data: product }, { data: zone }, { data: variant }] = await Promise.all([
-    supabase.from("products").select("printful_product_id").eq("id", productId).single(),
+  const [{ data: zone }, { data: variant }] = await Promise.all([
     supabase.from("print_zones").select("printful_placement").eq("key", printZoneKey).single(),
     variantQuery.maybeSingle(),
   ]);

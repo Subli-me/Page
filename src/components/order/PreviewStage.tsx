@@ -24,6 +24,7 @@ type State =
   | { kind: "loading" }
   | { kind: "ready"; url: string }
   | { kind: "composite"; baseImageUrl: string; overlay: Overlay; designUrl: string | null }
+  | { kind: "blankPhoto"; url: string }
   | { kind: "fallback" }
   | { kind: "blank" }
   | { kind: "error" };
@@ -77,6 +78,8 @@ export function PreviewStage({
           });
         } else if (data.available && data.status === "completed" && data.mockupUrl) {
           setState({ kind: "ready", url: data.mockupUrl });
+        } else if (data.available && data.source === "printful-blank" && data.blankImageUrl) {
+          setState({ kind: "blankPhoto", url: data.blankImageUrl });
         } else if (imageUrl && printZoneKey && zoneLabel) {
           setState({ kind: "fallback" });
         } else {
@@ -145,6 +148,19 @@ export function PreviewStage({
               <Image src={state.url} alt="Vista previa realista de tu prenda" fill className="object-contain" priority />
               <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-dark/85 px-3 py-1 text-xs text-paper">
                 <Sparkles size={12} className="text-lime" /> Foto real
+              </span>
+            </motion.div>
+          ) : state.kind === "blankPhoto" ? (
+            <motion.div
+              key="blankPhoto"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0"
+            >
+              <Image src={state.url} alt="Foto de la prenda" fill className="object-contain" priority />
+              <span className="absolute bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-dark/85 px-3 py-1 text-xs text-paper">
+                Subí tu imagen para personalizarla
               </span>
             </motion.div>
           ) : state.kind === "loading" ? (
