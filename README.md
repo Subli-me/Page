@@ -29,6 +29,7 @@ npm install
    - [`supabase/migration_site_settings.sql`](supabase/migration_site_settings.sql) — configuración editable del sitio (logo, textos, colores).
    - [`supabase/migration_printful.sql`](supabase/migration_printful.sql) — opcional, para la vista previa fotorrealista.
    - [`supabase/migration_design_catalog.sql`](supabase/migration_design_catalog.sql) — catálogo de diseños propios.
+   - [`supabase/migration_product_mockups.sql`](supabase/migration_product_mockups.sql) — mockups propios (foto real + zona del estampado), respaldo/alternativa a Printful.
 
    Si ya habías ejecutado `migration_site_settings.sql` antes de esta versión,
    corré también [`supabase/migration_site_settings_2.sql`](supabase/migration_site_settings_2.sql)
@@ -126,3 +127,8 @@ supabase/schema.sql       → schema completo de la base de datos
 - **`/admin/disenos`** — catálogo de diseños propios (subís imágenes vos). En
   `/pedido`, el cliente puede elegir entre subir su propia imagen o elegir uno
   de estos diseños ya cargados.
+- **`/admin/mockups`** — subís una foto real de cada prenda (por zona de
+  estampado) y marcás con un recuadro arrastrable/redimensionable dónde va el
+  diseño. Es la vista previa que ve el cliente en `/pedido` — tiene prioridad
+  sobre Printful, así que funciona igual con o sin esa integración, y con
+  prendas que ni siquiera están en el catálogo de Printful.

@@ -42,6 +42,18 @@ export type OrderStatus =
   | "entregado"
   | "cancelado";
 
+export type ProductMockup = {
+  id: string;
+  product_id: string;
+  print_zone_key: string;
+  image_url: string;
+  image_public_id: string;
+  overlay_x: number;
+  overlay_y: number;
+  overlay_w: number;
+  overlay_h: number;
+};
+
 export type DesignCatalogItem = {
   id: string;
   name: string;

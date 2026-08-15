@@ -15,21 +15,17 @@ type Params = {
   image: UploadedImage | null;
 };
 
+type Overlay = { x: number; y: number; w: number; h: number };
+
 type State =
   | { kind: "empty" }
   | { kind: "loading" }
   | { kind: "ready"; url: string }
+  | { kind: "composite"; baseImageUrl: string; overlay: Overlay; designUrl: string }
   | { kind: "fallback" }
   | { kind: "error" };
 
-export function PreviewStage({
-  productId,
-  size,
-  color,
-  printZoneKey,
-  zoneLabel,
-  image,
-}: Params) {
+export function PreviewStage({ productId, size, color, printZoneKey, zoneLabel, image }: Params) {
   const [state, setState] = useState<State>({ kind: "empty" });
   const requestId = useRef(0);
   const imageUrl = image?.url ?? null;
@@ -39,10 +35,6 @@ export function PreviewStage({
       setState({ kind: "empty" });
       return;
     }
-    if (!size) {
-      setState({ kind: "fallback" });
-      return;
-    }
 
     const id = ++requestId.current;
     setState({ kind: "loading" });
@@ -50,12 +42,19 @@ export function PreviewStage({
     fetch("/api/mockup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ productId, size, color, printZoneKey, imageUrl }),
+      body: JSON.stringify({ productId, size: size ?? "M", color, printZoneKey, imageUrl }),
     })
       .then((r) => r.json())
       .then((data) => {
         if (requestId.current !== id) return;
-        if (data.available && data.status === "completed" && data.mockupUrl) {
+        if (data.available && data.source === "own" && data.mockup) {
+          setState({
+            kind: "composite",
+            baseImageUrl: data.mockup.baseImageUrl,
+            overlay: data.mockup.overlay,
+            designUrl: imageUrl,
+          });
+        } else if (data.available && data.status === "completed" && data.mockupUrl) {
           setState({ kind: "ready", url: data.mockupUrl });
         } else {
           setState({ kind: "fallback" });
@@ -69,6 +68,32 @@ export function PreviewStage({
   const missing: string[] = [];
   if (!imageUrl) missing.push("una imagen");
   if (!printZoneKey) missing.push("dónde va el estampado");
+
+  if (state.kind === "composite") {
+    return (
+      <div className="overflow-hidden rounded-2xl border border-line bg-panel">
+        <div className="relative">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={state.baseImageUrl} alt="Prenda" className="block h-auto w-full" />
+          <div
+            className="absolute overflow-hidden"
+            style={{
+              left: `${state.overlay.x}%`,
+              top: `${state.overlay.y}%`,
+              width: `${state.overlay.w}%`,
+              height: `${state.overlay.h}%`,
+            }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={state.designUrl} alt="Tu diseño" className="h-full w-full object-cover" />
+          </div>
+          <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-dark/85 px-3 py-1 text-xs text-paper">
+            <Sparkles size={12} className="text-lime" /> Foto real
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="overflow-hidden rounded-2xl border border-line bg-panel">
@@ -116,7 +141,7 @@ export function PreviewStage({
                 Estampado en <strong className="text-ink">{zoneLabel}</strong>
               </p>
               <p className="max-w-56 text-center text-xs text-ink-soft/70">
-                La foto realista de esta combinación todavía no está lista, pero tu diseño y la ubicación quedaron guardados.
+                Todavía no cargamos una foto de esta prenda, pero tu diseño y la ubicación quedaron guardados.
               </p>
             </motion.div>
           ) : state.kind === "error" ? (

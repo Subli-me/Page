@@ -12,10 +12,6 @@ const schema = z.object({
 });
 
 export async function POST(req: Request) {
-  if (!process.env.PRINTFUL_API_KEY) {
-    return NextResponse.json({ available: false }, { status: 200 });
-  }
-
   const parsed = schema.safeParse(await req.json());
   if (!parsed.success) {
     return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
@@ -23,6 +19,37 @@ export async function POST(req: Request) {
   const { productId, size, color, printZoneKey, imageUrl } = parsed.data;
 
   const supabase = createServiceClient();
+
+  // 1) ¿Hay un mockup propio cargado desde el admin para esta prenda/zona?
+  // Si existe, tiene prioridad: es la foto real de la prenda que vendemos.
+  const { data: ownMockup } = await supabase
+    .from("product_mockups")
+    .select("*")
+    .eq("product_id", productId)
+    .eq("print_zone_key", printZoneKey)
+    .maybeSingle();
+
+  if (ownMockup) {
+    return NextResponse.json({
+      available: true,
+      status: "completed",
+      source: "own",
+      mockup: {
+        baseImageUrl: ownMockup.image_url,
+        overlay: {
+          x: ownMockup.overlay_x,
+          y: ownMockup.overlay_y,
+          w: ownMockup.overlay_w,
+          h: ownMockup.overlay_h,
+        },
+      },
+    });
+  }
+
+  // 2) Si no hay mockup propio, probamos con Printful (si está configurado y mapeado).
+  if (!process.env.PRINTFUL_API_KEY) {
+    return NextResponse.json({ available: false });
+  }
 
   let variantQuery = supabase
     .from("product_variants")
@@ -38,7 +65,6 @@ export async function POST(req: Request) {
   ]);
 
   if (!product?.printful_product_id || !zone?.printful_placement || !variant?.printful_variant_id) {
-    // Todavía no se configuró el mapeo a Printful para esta prenda/talle/color.
     return NextResponse.json({ available: false });
   }
 
@@ -51,9 +77,14 @@ export async function POST(req: Request) {
     });
 
     if (result.status === "completed") {
-      return NextResponse.json({ available: true, status: "completed", mockupUrl: result.mockupUrl });
+      return NextResponse.json({
+        available: true,
+        status: "completed",
+        source: "printful",
+        mockupUrl: result.mockupUrl,
+      });
     }
-    return NextResponse.json({ available: true, status: result.status });
+    return NextResponse.json({ available: true, status: result.status, source: "printful" });
   } catch (e) {
     console.error(e);
     return NextResponse.json({ available: false });
