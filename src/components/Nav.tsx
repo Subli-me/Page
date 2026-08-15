@@ -10,9 +10,15 @@ export async function Nav() {
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-dark/90 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <Link href="/" className="flex items-center font-display text-2xl italic tracking-tight text-paper">
+        <Link href="/" className="flex h-11 items-center font-display text-2xl italic tracking-tight text-paper">
           {settings.logo_url ? (
-            <Image src={settings.logo_url} alt={settings.logo_text} width={120} height={32} className="h-8 w-auto object-contain" />
+            <Image
+              src={settings.logo_url}
+              alt={settings.logo_text}
+              width={160}
+              height={160}
+              className="h-11 w-auto max-w-36 object-contain"
+            />
           ) : (
             settings.logo_text
           )}
