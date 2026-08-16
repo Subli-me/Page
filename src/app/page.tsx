@@ -56,8 +56,14 @@ export default async function Home() {
 
             {/* Título secundario / eslogan */}
             <h2 className="max-w-2xl font-display text-2xl leading-tight tracking-tight text-paper/90 sm:text-4xl">
-              {settings.hero_title_line1}{" "}
-              <span className="italic text-lime">{settings.hero_title_line2}</span>
+              {(!settings.hero_title_line1 || settings.hero_title_line1 === "Tu diseño,")
+                ? "Bajo"
+                : settings.hero_title_line1}{" "}
+              <span className="italic text-lime">
+                {(!settings.hero_title_line2 || settings.hero_title_line2 === "en tu prenda.")
+                  ? "presión"
+                  : settings.hero_title_line2}
+              </span>
             </h2>
 
             <p className="mt-6 max-w-xl text-base text-paper/70 sm:text-lg">
