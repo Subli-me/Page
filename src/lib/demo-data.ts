@@ -68,7 +68,7 @@ export const DEMO_ZONES: PrintZone[] = [
 
 export const DEMO_SETTINGS: SiteSettings = {
   id: 1,
-  logo_text: "Sublime",
+  logo_text: "Subli-me",
   logo_url: null,
   favicon_emoji: "👕",
 

@@ -3,14 +3,31 @@ import { ArrowUpRight } from "lucide-react";
 import { getSiteSettings } from "@/lib/settings";
 import { ProcessModal } from "./ProcessModal";
 
+import Image from "next/image";
+
 export async function Nav() {
   const settings = await getSiteSettings();
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-dark/90 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <Link href="/" className="font-display text-2xl italic tracking-tight text-paper">
-          {settings.logo_text}
+        <Link href="/" className="flex items-center gap-2 font-display text-2xl tracking-tight text-paper">
+          {settings.logo_url ? (
+            <div className="relative h-8 w-28">
+              <Image
+                src={settings.logo_url}
+                alt={settings.logo_text || "Subli-me"}
+                fill
+                className="object-contain object-left"
+              />
+            </div>
+          ) : (
+            <span>
+              <span className="text-paper">Subli</span>
+              <span className="text-lime">-</span>
+              <span className="italic text-lime">me</span>
+            </span>
+          )}
         </Link>
         <nav className="flex items-center gap-8 text-sm">
           <Link
