@@ -68,7 +68,7 @@ export const DEMO_ZONES: PrintZone[] = [
 
 export const DEMO_SETTINGS: SiteSettings = {
   id: 1,
-  logo_text: "Sublime",
+  logo_text: "Subli-me",
   logo_url: null,
   favicon_emoji: "👕",
 
@@ -76,8 +76,8 @@ export const DEMO_SETTINGS: SiteSettings = {
   color_lime: "#d8f24a",
 
   hero_badge: "Estampado DTF a medida",
-  hero_title_line1: "Tu diseño,",
-  hero_title_line2: "en tu prenda.",
+  hero_title_line1: "Bajo",
+  hero_title_line2: "presión",
   hero_subtitle:
     "Subí tu imagen, elegí la prenda y dónde va el estampado. Nosotros nos encargamos de imprimirlo y hacerlo realidad.",
   hero_cta_label: "Crear mi diseño",

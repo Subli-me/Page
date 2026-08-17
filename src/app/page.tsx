@@ -9,6 +9,8 @@ import { HeroImage } from "@/components/HeroImage";
 import { getActiveProducts } from "@/lib/products";
 import { getSiteSettings } from "@/lib/settings";
 
+import Image from "next/image";
+
 export default async function Home() {
   const [products, settings] = await Promise.all([getActiveProducts(), getSiteSettings()]);
 
@@ -25,44 +27,79 @@ export default async function Home() {
       <main className="flex-1">
         {/* Hero */}
         <section className="grain bg-dark text-paper">
-          <div className="mx-auto grid max-w-6xl gap-12 px-6 pt-20 pb-16 sm:grid-cols-[1.1fr_0.9fr] sm:items-center sm:pt-28 sm:pb-24">
-            <div>
-              <p className="mb-6 inline-flex items-center gap-2 rounded-full border border-paper/20 px-4 py-1.5 text-xs uppercase tracking-[0.2em] text-lime">
-                {settings.hero_badge}
-              </p>
-              <h1 className="font-display text-6xl leading-[0.95] tracking-tight sm:text-7xl">
-                {settings.hero_title_line1}
-                <br />
-                <span className="italic text-lime">{settings.hero_title_line2}</span>
-              </h1>
-              <p className="mt-8 max-w-md text-lg text-paper/60">{settings.hero_subtitle}</p>
-              <div className="mt-10 flex flex-wrap items-center gap-4">
-                <Link
-                  href="/pedido"
-                  className="group inline-flex items-center gap-2 rounded-full bg-lime px-7 py-4 font-medium text-dark transition-transform hover:-translate-y-0.5"
-                >
-                  {settings.hero_cta_label}
-                  <ArrowUpRight
-                    size={18}
-                    className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+          <div className="mx-auto flex max-w-5xl flex-col items-center px-6 pt-16 pb-16 text-center sm:pt-24 sm:pb-24">
+            {/* Badge */}
+            <p className="mb-6 inline-flex items-center gap-2 rounded-full border border-paper/20 bg-white/5 px-4 py-1.5 text-xs uppercase tracking-[0.2em] text-lime">
+              {settings.hero_badge}
+            </p>
+
+            {/* Logo de la empresa en la parte central como título */}
+            <div className="mb-6 flex items-center justify-center">
+              {settings.logo_url ? (
+                <div className="relative h-20 w-64 sm:h-28 sm:w-80">
+                  <Image
+                    src={settings.logo_url}
+                    alt={settings.logo_text || "Subli-me"}
+                    fill
+                    priority
+                    className="object-contain"
                   />
-                </Link>
-                <Link
-                  href="#catalogo"
-                  className="link-underline inline-flex items-center gap-2 px-2 py-4 text-paper/80"
-                >
-                  Ver prendas
-                </Link>
-              </div>
+                </div>
+              ) : (
+                <h1 className="font-display text-6xl tracking-tight sm:text-8xl md:text-9xl">
+                  <span className="text-paper">Subli</span>
+                  <span className="text-lime">-</span>
+                  <span className="italic text-lime">me</span>
+                </h1>
+              )}
             </div>
 
+            {/* Título secundario / eslogan */}
+            <h2 className="max-w-2xl font-display text-2xl leading-tight tracking-tight text-paper/90 sm:text-4xl">
+              {(!settings.hero_title_line1 || settings.hero_title_line1 === "Tu diseño,")
+                ? "Bajo"
+                : settings.hero_title_line1}{" "}
+              <span className="italic text-lime">
+                {(!settings.hero_title_line2 || settings.hero_title_line2 === "en tu prenda.")
+                  ? "presión"
+                  : settings.hero_title_line2}
+              </span>
+            </h2>
+
+            <p className="mt-6 max-w-xl text-base text-paper/70 sm:text-lg">
+              {settings.hero_subtitle}
+            </p>
+
+            {/* Botones de acción */}
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+              <Link
+                href="/pedido"
+                className="group inline-flex items-center gap-2 rounded-full bg-lime px-8 py-4 font-medium text-dark transition-transform hover:-translate-y-0.5"
+              >
+                {settings.hero_cta_label}
+                <ArrowUpRight
+                  size={18}
+                  className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                />
+              </Link>
+              <Link
+                href="#catalogo"
+                className="link-underline inline-flex items-center gap-2 px-4 py-4 text-paper/80 hover:text-paper"
+              >
+                Ver prendas
+              </Link>
+            </div>
+
+            {/* Imagen destacada centrada */}
             {settings.hero_image_url && (
-              <HeroImage
-                src={settings.hero_image_url}
-                alt={settings.hero_title_line1}
-                logoUrl={settings.logo_url}
-                logoAlt={settings.logo_text}
-              />
+              <div className="mt-12 w-full max-w-md sm:max-w-lg">
+                <HeroImage
+                  src={settings.hero_image_url}
+                  alt={settings.hero_title_line1}
+                  logoUrl={settings.logo_url}
+                  logoAlt={settings.logo_text}
+                />
+              </div>
             )}
           </div>
         </section>
