@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Fraunces } from "next/font/google";
 import "./globals.css";
 import { getSiteSettings } from "@/lib/settings";
+import { SITE_URL } from "@/lib/site-url";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,9 +22,31 @@ const fraunces = Fraunces({
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings();
+  const ogImage = settings.hero_image_url ?? settings.logo_url ?? undefined;
+
   return {
-    title: settings.seo_title,
+    metadataBase: new URL(SITE_URL),
+    title: {
+      default: settings.seo_title,
+      template: `%s — ${settings.logo_text}`,
+    },
     description: settings.seo_description,
+    alternates: { canonical: "/" },
+    openGraph: {
+      type: "website",
+      locale: "es_AR",
+      siteName: settings.logo_text,
+      title: settings.seo_title,
+      description: settings.seo_description,
+      url: "/",
+      images: ogImage ? [{ url: ogImage }] : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: settings.seo_title,
+      description: settings.seo_description,
+      images: ogImage ? [ogImage] : undefined,
+    },
   };
 }
 

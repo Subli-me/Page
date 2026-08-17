@@ -8,11 +8,30 @@ import { ProductGrid } from "@/components/ProductGrid";
 import { HeroImage } from "@/components/HeroImage";
 import { getActiveProducts } from "@/lib/products";
 import { getSiteSettings } from "@/lib/settings";
+import { SITE_URL } from "@/lib/site-url";
 
 import Image from "next/image";
 
 export default async function Home() {
   const [products, settings] = await Promise.all([getActiveProducts(), getSiteSettings()]);
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ClothingStore",
+    name: settings.logo_text,
+    description: settings.seo_description,
+    url: SITE_URL,
+    image: settings.hero_image_url ?? undefined,
+    ...(settings.contact_email ? { email: settings.contact_email } : {}),
+    ...(settings.contact_phone ? { telephone: settings.contact_phone } : {}),
+    address: { "@type": "PostalAddress", addressCountry: "AR" },
+    makesOffer: products.map((p) => ({
+      "@type": "Offer",
+      itemOffered: { "@type": "Product", name: p.name, description: p.description ?? undefined },
+      price: p.base_price,
+      priceCurrency: "ARS",
+    })),
+  };
 
   const steps = [
     { n: "01", title: settings.step1_title, text: settings.step1_text },
@@ -22,6 +41,10 @@ export default async function Home() {
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <Nav />
 
       <main className="flex-1">

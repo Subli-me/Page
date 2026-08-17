@@ -1,6 +1,12 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { LogoutButton } from "@/components/admin/LogoutButton";
 import { getSiteSettings } from "@/lib/settings";
+
+// El panel admin nunca debe indexarse en buscadores.
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const settings = await getSiteSettings();

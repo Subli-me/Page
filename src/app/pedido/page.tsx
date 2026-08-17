@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 import { OrderWizard } from "@/components/order/OrderWizard";
@@ -7,6 +8,16 @@ import { getActiveDesigns } from "@/lib/designs";
 import { getSiteSettings } from "@/lib/settings";
 import { createClient } from "@/lib/supabase/server";
 import { isDemoMode, DEMO_SIZES, DEMO_COLORS } from "@/lib/demo-data";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSiteSettings();
+  return {
+    title: settings.pedido_title,
+    description: settings.pedido_subtitle,
+    alternates: { canonical: "/pedido" },
+    openGraph: { title: settings.pedido_title, description: settings.pedido_subtitle, url: "/pedido" },
+  };
+}
 
 export default async function PedidoPage() {
   const [products, printZones, designs, settings] = await Promise.all([

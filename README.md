@@ -79,6 +79,20 @@ gratis y no hace falta vender a través de ellos.
 Si no configurás esto (o para prendas que no están en su catálogo), el pedido
 funciona igual con el mockup propio (`/admin/mockups`) o el fallback de texto.
 
+### 4.2. SEO
+
+El sitio genera automáticamente:
+- `/robots.txt` y `/sitemap.xml` (bloquean `/admin` y `/api` para buscadores).
+- Open Graph / Twitter Card en cada página (título, descripción e imagen —
+  usa `hero_image_url` de `/admin/sitio`).
+- Datos estructurados (`ClothingStore`) en el home, con el catálogo de
+  productos activos.
+- Favicon dinámico con el emoji configurado en `/admin/sitio`.
+
+Solo falta setear `NEXT_PUBLIC_SITE_URL` con el dominio real una vez que lo
+tengan (mientras usen el subdominio de Vercel, el valor por defecto ya
+apunta ahí).
+
 ### 5. Variables de entorno
 
 Copiá `.env.example` a `.env.local` y completá los valores:
