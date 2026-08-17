@@ -145,7 +145,12 @@ export function PreviewStage({
             )}
 
             {state.designUrl ? (
-              <DesignAdjuster designUrl={state.designUrl} overlay={state.overlay} onChange={onDesignTransformChange} />
+              <DesignAdjuster
+                designUrl={state.designUrl}
+                overlay={state.overlay}
+                onChange={onDesignTransformChange}
+                maskUrl={state.foregroundUrl}
+              />
             ) : (
               <div
                 className="absolute flex items-center justify-center border border-dashed border-ink-soft/40 bg-ink/5"

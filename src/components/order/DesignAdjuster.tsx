@@ -11,10 +11,15 @@ export function DesignAdjuster({
   designUrl,
   overlay,
   onChange,
+  maskUrl,
 }: {
   designUrl: string;
   overlay: { x: number; y: number; w: number; h: number };
   onChange?: (t: DesignTransform) => void;
+  // Foto/capa que tiene la silueta real de la prenda (con transparencia fuera
+  // de ella). Recorta el diseño contra esa forma, no solo contra el rectángulo
+  // de la zona, para que nunca se vea "flotando" fuera del cuerpo de la prenda.
+  maskUrl?: string | null;
 }) {
   const frameRef = useRef<HTMLDivElement>(null);
   const [t, setT] = useState<DesignTransform>(DEFAULT_TRANSFORM);
@@ -47,7 +52,10 @@ export function DesignAdjuster({
       const dist1 = Math.hypot(v1.x, v1.y) || 1;
       const angle0 = Math.atan2(v0.y, v0.x);
       const angle1 = Math.atan2(v1.y, v1.x);
-      const scale = Math.min(4, Math.max(0.25, drag.startT.scale * (dist1 / dist0)));
+      // Tope de escala: más allá de esto el diseño empieza a exceder el área
+      // real de impresión de la zona (el rectángulo "overlay" ya representa
+      // las dimensiones físicas máximas que Printful usa para esta prenda).
+      const scale = Math.min(2.2, Math.max(0.25, drag.startT.scale * (dist1 / dist0)));
       const rotation = drag.startT.rotation + ((angle1 - angle0) * 180) / Math.PI;
       setT({ ...drag.startT, scale, rotation });
     }
@@ -83,6 +91,24 @@ export function DesignAdjuster({
     window.addEventListener("pointerup", onUp);
   }
 
+  // La zona (overlay) es un recorte de la foto completa de la prenda. Para
+  // recortar el diseño contra la silueta real (no solo el rectángulo), la
+  // misma foto/capa se usa como mask-image, mostrando en esta zona
+  // exactamente la porción de la máscara que le corresponde — mismo truco
+  // que un sprite de spritesheet vía background-position/size.
+  const maskStyle = maskUrl
+    ? {
+        WebkitMaskImage: `url(${maskUrl})`,
+        maskImage: `url(${maskUrl})`,
+        WebkitMaskRepeat: "no-repeat",
+        maskRepeat: "no-repeat",
+        WebkitMaskSize: `${10000 / overlay.w}% ${10000 / overlay.h}%`,
+        maskSize: `${10000 / overlay.w}% ${10000 / overlay.h}%`,
+        WebkitMaskPosition: `${(100 * overlay.x) / (100 - overlay.w)}% ${(100 * overlay.y) / (100 - overlay.h)}%`,
+        maskPosition: `${(100 * overlay.x) / (100 - overlay.w)}% ${(100 * overlay.y) / (100 - overlay.h)}%`,
+      }
+    : undefined;
+
   return (
     <div
       ref={frameRef}
@@ -92,6 +118,7 @@ export function DesignAdjuster({
         top: `${overlay.y}%`,
         width: `${overlay.w}%`,
         height: `${overlay.h}%`,
+        ...maskStyle,
       }}
     >
       <div className="pointer-events-none absolute inset-0 border border-dashed border-paper/50" />
