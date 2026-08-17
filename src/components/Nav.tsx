@@ -2,6 +2,8 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { getSiteSettings } from "@/lib/settings";
 import { ProcessModal } from "./ProcessModal";
+import { EditableText } from "./edit/EditableText";
+import { EditableImage } from "./edit/EditableImage";
 
 import Image from "next/image";
 
@@ -13,20 +15,16 @@ export async function Nav() {
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <Link href="/" className="flex items-center gap-2 font-display text-2xl tracking-tight text-paper">
           {settings.logo_url ? (
-            <div className="relative h-8 w-28">
+            <EditableImage field="logo_url" className="relative h-8 w-28">
               <Image
                 src={settings.logo_url}
                 alt={settings.logo_text || "Subli-me"}
                 fill
                 className="object-contain object-left"
               />
-            </div>
+            </EditableImage>
           ) : (
-            <span>
-              <span className="text-paper">Subli</span>
-              <span className="text-lime">-</span>
-              <span className="italic text-lime">me</span>
-            </span>
+            <EditableText field="logo_text" value={settings.logo_text} as="span" />
           )}
         </Link>
         <nav className="flex items-center gap-8 text-sm">
@@ -34,7 +32,7 @@ export async function Nav() {
             href="/#catalogo"
             className="link-underline hidden text-paper/70 transition-colors hover:text-paper sm:inline"
           >
-            {settings.nav_catalog_label}
+            <EditableText field="nav_catalog_label" value={settings.nav_catalog_label} as="span" />
           </Link>
           <ProcessModal
             triggerLabel={settings.nav_process_label}

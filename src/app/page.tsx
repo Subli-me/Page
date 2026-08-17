@@ -9,9 +9,25 @@ import { HeroImage } from "@/components/HeroImage";
 import { getActiveProducts } from "@/lib/products";
 import { getSiteSettings } from "@/lib/settings";
 import { SITE_URL } from "@/lib/site-url";
+import { isAuthorizedAdmin } from "@/lib/admin-auth";
+import { EditModeProvider } from "@/contexts/EditModeContext";
+import { EditableText } from "@/components/edit/EditableText";
+import { EditableImage } from "@/components/edit/EditableImage";
+import { EditableColor } from "@/components/edit/EditableColor";
+import { EditModeBanner } from "@/components/edit/EditModeBanner";
 
-export default async function Home() {
-  const [products, settings] = await Promise.all([getActiveProducts(), getSiteSettings()]);
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ edit?: string }>;
+}) {
+  const [products, settings, canEdit, sp] = await Promise.all([
+    getActiveProducts(),
+    getSiteSettings(),
+    isAuthorizedAdmin(),
+    searchParams,
+  ]);
+  const editing = canEdit && sp.edit === "1";
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -32,13 +48,13 @@ export default async function Home() {
   };
 
   const steps = [
-    { n: "01", title: settings.step1_title, text: settings.step1_text },
-    { n: "02", title: settings.step2_title, text: settings.step2_text },
-    { n: "03", title: settings.step3_title, text: settings.step3_text },
-  ];
+    { n: "01", titleField: "step1_title", textField: "step1_text", title: settings.step1_title, text: settings.step1_text },
+    { n: "02", titleField: "step2_title", textField: "step2_text", title: settings.step2_title, text: settings.step2_text },
+    { n: "03", titleField: "step3_title", textField: "step3_text", title: settings.step3_title, text: settings.step3_text },
+  ] as const;
 
   return (
-    <>
+    <EditModeProvider editing={editing}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -50,21 +66,39 @@ export default async function Home() {
         <section className="grain bg-dark text-paper">
           <div className="mx-auto grid max-w-6xl gap-12 px-6 pt-20 pb-16 sm:grid-cols-[1.1fr_0.9fr] sm:items-center sm:pt-28 sm:pb-24">
             <div>
-              <p className="mb-6 inline-flex items-center gap-2 rounded-full border border-paper/20 px-4 py-1.5 text-xs uppercase tracking-[0.2em] text-lime">
-                {settings.hero_badge}
-              </p>
+              <div className="mb-6 flex flex-wrap items-center gap-2">
+                <EditableText
+                  field="hero_badge"
+                  value={settings.hero_badge}
+                  as="p"
+                  className="inline-flex items-center gap-2 rounded-full border border-paper/20 px-4 py-1.5 text-xs uppercase tracking-[0.2em] text-lime"
+                />
+                <EditableColor field="color_lime" value={settings.color_lime} label="Lima" />
+                <EditableColor field="color_accent" value={settings.color_accent} label="Acento" />
+              </div>
               <h1 className="font-display text-6xl leading-[0.95] tracking-tight sm:text-7xl">
-                {settings.hero_title_line1}
+                <EditableText field="hero_title_line1" value={settings.hero_title_line1} as="span" />
                 <br />
-                <span className="italic text-lime">{settings.hero_title_line2}</span>
+                <EditableText
+                  field="hero_title_line2"
+                  value={settings.hero_title_line2}
+                  as="span"
+                  className="italic text-lime"
+                />
               </h1>
-              <p className="mt-8 max-w-md text-lg text-paper/60">{settings.hero_subtitle}</p>
+              <EditableText
+                field="hero_subtitle"
+                value={settings.hero_subtitle}
+                as="p"
+                multiline
+                className="mt-8 block max-w-md text-lg text-paper/60"
+              />
               <div className="mt-10 flex flex-wrap items-center gap-4">
                 <Link
                   href="/pedido"
                   className="group inline-flex items-center gap-2 rounded-full bg-lime px-7 py-4 font-medium text-dark transition-transform hover:-translate-y-0.5"
                 >
-                  {settings.hero_cta_label}
+                  <EditableText field="hero_cta_label" value={settings.hero_cta_label} as="span" />
                   <ArrowUpRight
                     size={18}
                     className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
@@ -80,12 +114,14 @@ export default async function Home() {
             </div>
 
             {settings.hero_image_url && (
-              <HeroImage
-                src={settings.hero_image_url}
-                alt={settings.hero_title_line1}
-                logoUrl={settings.logo_url}
-                logoAlt={settings.logo_text}
-              />
+              <EditableImage field="hero_image_url">
+                <HeroImage
+                  src={settings.hero_image_url}
+                  alt={settings.hero_title_line1}
+                  logoUrl={settings.logo_url}
+                  logoAlt={settings.logo_text}
+                />
+              </EditableImage>
             )}
           </div>
         </section>
@@ -103,8 +139,8 @@ export default async function Home() {
             {steps.map((s, i) => (
               <Reveal key={s.n} delay={i * 0.1}>
                 <span className="font-display text-6xl italic text-accent/30">{s.n}</span>
-                <h3 className="mt-4 font-display text-2xl">{s.title}</h3>
-                <p className="mt-2 text-sm text-ink-soft">{s.text}</p>
+                <EditableText field={s.titleField} value={s.title} as="h3" className="mt-4 block font-display text-2xl" />
+                <EditableText field={s.textField} value={s.text} as="p" multiline className="mt-2 block text-sm text-ink-soft" />
               </Reveal>
             ))}
           </div>
@@ -128,6 +164,7 @@ export default async function Home() {
       </main>
 
       <Footer />
-    </>
+      {editing && <EditModeBanner />}
+    </EditModeProvider>
   );
 }

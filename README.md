@@ -155,3 +155,9 @@ supabase/schema.sql       → schema completo de la base de datos
   diseño. Es la vista previa que ve el cliente en `/pedido` — tiene prioridad
   sobre Printful, así que funciona igual con o sin esa integración, y con
   prendas que ni siquiera están en el catálogo de Printful.
+- **"Editar sitio en vivo"** (botón en el menú del admin) — te lleva al home
+  con un modo de edición: pasás el mouse sobre cualquier texto, imagen o
+  color de la página y lo cambiás ahí mismo, con el resultado real delante
+  tuyo. Usa por debajo los mismos campos de `/admin/sitio`, así que es otra
+  forma de editar lo mismo, no una funcionalidad separada. Solo lo ven los
+  emails de `ADMIN_ALLOWED_EMAILS` logueados, con `?edit=1` en la URL.

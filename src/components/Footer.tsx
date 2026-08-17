@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { getSiteSettings } from "@/lib/settings";
+import { EditableText } from "./edit/EditableText";
 
 export async function Footer() {
   const settings = await getSiteSettings();
@@ -11,9 +12,14 @@ export async function Footer() {
         <div className="flex flex-col items-start justify-between gap-10 sm:flex-row sm:items-end">
           <div>
             <p className="font-display text-4xl italic sm:text-5xl">
-              {settings.footer_headline_line1}
+              <EditableText field="footer_headline_line1" value={settings.footer_headline_line1} as="span" />
               <br />
-              <span className="text-lime">{settings.footer_headline_line2}</span>
+              <EditableText
+                field="footer_headline_line2"
+                value={settings.footer_headline_line2}
+                as="span"
+                className="text-lime"
+              />
             </p>
           </div>
           <Link
@@ -26,8 +32,11 @@ export async function Footer() {
         </div>
 
         <div className="mt-16 flex flex-col gap-2 border-t border-paper/10 pt-8 text-sm text-paper/50 sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} {settings.logo_text} — {settings.footer_copyright_suffix}</p>
-          <p>{settings.footer_tagline}</p>
+          <p>
+            © {new Date().getFullYear()} {settings.logo_text} —{" "}
+            <EditableText field="footer_copyright_suffix" value={settings.footer_copyright_suffix} as="span" />
+          </p>
+          <EditableText field="footer_tagline" value={settings.footer_tagline} as="p" />
         </div>
       </div>
     </footer>

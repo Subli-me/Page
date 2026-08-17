@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { Pencil } from "lucide-react";
 import { LogoutButton } from "@/components/admin/LogoutButton";
 import { getSiteSettings } from "@/lib/settings";
 
@@ -31,6 +32,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             Sitio
           </Link>
         </nav>
+        <div className="mt-6">
+          <Link
+            href="/?edit=1"
+            className="flex items-center gap-2 rounded-lg bg-ink px-3 py-2.5 text-sm text-paper hover:bg-accent"
+          >
+            <Pencil size={14} /> Editar sitio en vivo
+          </Link>
+        </div>
         <div className="mt-10">
           <LogoutButton />
         </div>
