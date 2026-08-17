@@ -127,16 +127,17 @@ export function PreviewStage({
               )}
             </div>
           )}
-          {/* Sombras/pliegues de la tela por encima del diseño, para que se vea puesto de verdad.
-              Se reutiliza la misma capa para todos los colores, por eso va con blend "multiply"
-              sobre el color/foto de base en vez de superponerse plana. */}
+          {/* Sombras/pliegues de la tela por encima del diseño. El PNG de Printful
+              ya trae su propia transparencia (recorte de la prenda + sombreado),
+              por eso va con alpha normal — "multiply" tapaba todo en colores oscuros
+              porque el color de fondo se mezclaba con el fondo del estudio, no solo
+              con la prenda. */}
           {state.foregroundUrl && (
             /* eslint-disable-next-line @next/next/no-img-element */
             <img
               src={state.foregroundUrl}
               alt=""
               className="pointer-events-none absolute inset-0 h-full w-full"
-              style={{ mixBlendMode: "multiply" }}
               aria-hidden
             />
           )}
