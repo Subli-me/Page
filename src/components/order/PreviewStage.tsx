@@ -149,7 +149,6 @@ export function PreviewStage({
                 designUrl={state.designUrl}
                 overlay={state.overlay}
                 onChange={onDesignTransformChange}
-                maskUrl={state.foregroundUrl}
               />
             ) : (
               <div
