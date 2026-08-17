@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
+import { isAuthorizedAdmin } from "@/lib/admin-auth";
 
 const ALLOWED_FIELDS = [
   "logo_text",
@@ -51,11 +52,9 @@ const ALLOWED_FIELDS = [
 ];
 
 export async function PATCH(req: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  if (!(await isAuthorizedAdmin())) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
 
   const body = await req.json();
   const update = Object.fromEntries(

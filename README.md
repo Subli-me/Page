@@ -39,9 +39,14 @@ npm install
    para sumar las columnas que se agregaron después (en un Supabase nuevo no
    hace falta, ya están todas en el `migration_site_settings.sql` actualizado).
 3. En **Authentication → Users**, creá manualmente tu usuario admin (email + contraseña).
-   Es el único que va a poder loguearse en `/admin`.
 4. Copiá `Project URL`, `anon public key` y `service_role key` desde
    **Project Settings → API**.
+5. **Importante — seguridad**: cargá `ADMIN_ALLOWED_EMAILS` con ese mismo
+   email (ver sección de variables de entorno más abajo). Estar logueado en
+   Supabase no alcanza para entrar a `/admin`: Supabase permite que cualquiera
+   se registre por su cuenta con la clave pública del sitio, así que sin esta
+   variable **nadie** puede entrar al panel (falla cerrado a propósito). Si
+   sos varias personas administrando, separá los emails con comas.
 
 ### 3. Crear cuenta en Cloudinary
 

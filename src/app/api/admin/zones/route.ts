@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
+import { isAuthorizedAdmin } from "@/lib/admin-auth";
 
 const schema = z.object({
   label: z.string().min(1),
@@ -18,9 +19,9 @@ function slugify(text: string) {
 }
 
 export async function POST(req: Request) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  if (!(await isAuthorizedAdmin())) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
 
   const parsed = schema.safeParse(await req.json());
   if (!parsed.success) return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });

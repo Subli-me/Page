@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
+import { isAuthorizedAdmin } from "@/lib/admin-auth";
 
 const schema = z.object({
   name: z.string().min(1),
@@ -9,14 +10,8 @@ const schema = z.object({
   category: z.string().optional().nullable(),
 });
 
-async function requireAdmin() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  return !!user;
-}
-
 export async function POST(req: Request) {
-  if (!(await requireAdmin())) {
+  if (!(await isAuthorizedAdmin())) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
