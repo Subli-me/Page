@@ -30,6 +30,7 @@ npm install
    - [`supabase/migration_printful.sql`](supabase/migration_printful.sql) — opcional, para la vista previa fotorrealista.
    - [`supabase/migration_design_catalog.sql`](supabase/migration_design_catalog.sql) — catálogo de diseños propios.
    - [`supabase/migration_product_mockups.sql`](supabase/migration_product_mockups.sql) — mockups propios (foto real + zona del estampado), respaldo/alternativa a Printful.
+   - [`supabase/migration_order_items.sql`](supabase/migration_order_items.sql) — permite varios estampados por pedido (ej: pecho + espalda + manga).
 
    Si ya habías ejecutado `migration_site_settings.sql` antes de esta versión,
    corré también [`supabase/migration_site_settings_2.sql`](supabase/migration_site_settings_2.sql)

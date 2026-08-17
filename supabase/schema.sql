@@ -52,9 +52,13 @@ create table if not exists orders (
   product_id uuid references products(id),
   size text not null,
   color text,
-  print_zone_key text not null references print_zones(key),
-  image_url text not null,          -- imagen del cliente en Cloudinary (resolución original)
-  image_public_id text not null,    -- public_id de Cloudinary, para poder re-descargar/transformar
+  -- Estas 3 columnas quedan solo por compatibilidad con pedidos viejos de
+  -- un solo estampado. Los pedidos nuevos (varios estampados) usan
+  -- order_items, por eso son nullable.
+  print_zone_key text references print_zones(key),
+  image_url text,          -- imagen del cliente en Cloudinary (resolución original)
+  image_public_id text,    -- public_id de Cloudinary, para poder re-descargar/transformar
+  design_transform jsonb,
   customer_name text not null,
   customer_email text not null,
   customer_phone text,
@@ -68,6 +72,19 @@ create table if not exists orders (
 create index if not exists orders_status_idx on orders(status);
 create index if not exists orders_created_at_idx on orders(created_at desc);
 
+-- Estampados del pedido: un pedido puede tener varios (pecho + espalda + manga...)
+create table if not exists order_items (
+  id uuid primary key default gen_random_uuid(),
+  order_id uuid not null references orders(id) on delete cascade,
+  print_zone_key text not null references print_zones(key),
+  image_url text not null,
+  image_public_id text not null,
+  design_transform jsonb,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists order_items_order_id_idx on order_items(order_id);
+
 -- RLS: solo el backend (service role) escribe/lee todo. El cliente público solo
 -- puede insertar pedidos y leer productos activos.
 alter table products enable row level security;
@@ -75,6 +92,7 @@ alter table product_sizes enable row level security;
 alter table product_colors enable row level security;
 alter table print_zones enable row level security;
 alter table orders enable row level security;
+alter table order_items enable row level security;
 
 create policy "public read active products" on products
   for select using (active = true);

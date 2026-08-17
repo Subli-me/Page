@@ -31,7 +31,7 @@ async function fetchOrders() {
   const supabase = createServiceClient();
   const { data } = await supabase
     .from("orders")
-    .select("*, products(name)")
+    .select("*, products(name), order_items(*, print_zones(label))")
     .order("created_at", { ascending: false });
   return data ?? [];
 }

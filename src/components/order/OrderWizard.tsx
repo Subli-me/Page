@@ -16,6 +16,8 @@ import { SizeGuideModal } from "./SizeGuideModal";
 
 const STEPS = ["Prenda", "Talle y color", "Diseño", "Tus datos"] as const;
 
+type PrintEntry = { image: UploadedImage | null; transform: DesignTransform | null };
+
 export function OrderWizard({
   products,
   sizes,
@@ -42,32 +44,65 @@ export function OrderWizard({
   );
   const [size, setSize] = useState<string | null>(null);
   const [color, setColor] = useState<string | null>(null);
-  const [image, setImage] = useState<UploadedImage | null>(null);
-  const [zoneKey, setZoneKey] = useState<string | null>(null);
-  const [designTransform, setDesignTransform] = useState<DesignTransform | null>(null);
+  const [prints, setPrints] = useState<Record<string, PrintEntry>>({});
+  const [activeZone, setActiveZone] = useState<string | null>(null);
   const [contact, setContact] = useState({ name: "", email: "", phone: "", notes: "" });
   const [status, setStatus] = useState<"idle" | "submitting" | "done" | "error">("idle");
 
   const product = products.find((p) => p.id === productId) ?? null;
   const productSizes = sizes.filter((s) => s.product_id === productId);
   const productColors = colors.filter((c) => c.product_id === productId);
-  const zone = printZones.find((z) => z.key === zoneKey) ?? null;
+  const addedZoneKeys = Object.keys(prints);
 
   const total = useMemo(() => {
     if (!product) return 0;
     const sizeDelta = productSizes.find((s) => s.size === size)?.price_delta ?? 0;
-    return Number(product.base_price) + Number(sizeDelta) + Number(zone?.extra_price ?? 0);
-  }, [product, productSizes, size, zone]);
+    const extraTotal = addedZoneKeys.reduce((sum, key) => {
+      const zone = printZones.find((z) => z.key === key);
+      return sum + Number(zone?.extra_price ?? 0);
+    }, 0);
+    return Number(product.base_price) + Number(sizeDelta) + extraTotal;
+  }, [product, productSizes, size, addedZoneKeys, printZones]);
+
+  const allZonesHaveImage = addedZoneKeys.length > 0 && addedZoneKeys.every((k) => prints[k].image);
 
   const canNext = [
     !!productId,
     !!size && (productColors.length === 0 || !!color),
-    !!image && !!zoneKey,
+    allZonesHaveImage,
     contact.name.length > 1 && contact.email.includes("@"),
   ][step];
 
+  function addZone(key: string) {
+    setPrints((prev) => (prev[key] ? prev : { ...prev, [key]: { image: null, transform: null } }));
+    setActiveZone(key);
+  }
+
+  function removeZone(key: string) {
+    setPrints((prev) => {
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+    setActiveZone((current) => {
+      if (current !== key) return current;
+      const remaining = addedZoneKeys.filter((k) => k !== key);
+      return remaining[0] ?? null;
+    });
+  }
+
+  function setActiveImage(img: UploadedImage | null) {
+    if (!activeZone) return;
+    setPrints((prev) => ({ ...prev, [activeZone]: { ...prev[activeZone], image: img } }));
+  }
+
+  function setActiveTransform(t: DesignTransform | null) {
+    if (!activeZone) return;
+    setPrints((prev) => ({ ...prev, [activeZone]: { ...prev[activeZone], transform: t } }));
+  }
+
   async function submit() {
-    if (!product || !image || !zoneKey) return;
+    if (!product || !allZonesHaveImage) return;
     setStatus("submitting");
     try {
       const res = await fetch("/api/orders", {
@@ -77,14 +112,16 @@ export function OrderWizard({
           productId: product.id,
           size,
           color,
-          printZoneKey: zoneKey,
-          imageUrl: image.url,
-          imagePublicId: image.publicId,
+          prints: addedZoneKeys.map((key) => ({
+            printZoneKey: key,
+            imageUrl: prints[key].image!.url,
+            imagePublicId: prints[key].image!.publicId,
+            designTransform: prints[key].transform,
+          })),
           customerName: contact.name,
           customerEmail: contact.email,
           customerPhone: contact.phone || null,
           notes: contact.notes || null,
-          designTransform,
         }),
       });
       if (!res.ok) throw new Error();
@@ -107,6 +144,8 @@ export function OrderWizard({
       </div>
     );
   }
+
+  const activeZoneLabel = printZones.find((z) => z.key === activeZone)?.label ?? null;
 
   return (
     <div>
@@ -149,7 +188,13 @@ export function OrderWizard({
                 <button
                   key={p.id}
                   type="button"
-                  onClick={() => { setProductId(p.id); setSize(null); setColor(null); }}
+                  onClick={() => {
+                    setProductId(p.id);
+                    setSize(null);
+                    setColor(null);
+                    setPrints({});
+                    setActiveZone(null);
+                  }}
                   className={clsx(
                     "overflow-hidden rounded-xl border text-left transition-colors",
                     productId === p.id ? "border-ink bg-accent-soft/40" : "border-line hover:border-ink"
@@ -216,30 +261,51 @@ export function OrderWizard({
           )}
 
           {step === 2 && product && (
-            <div className="grid gap-10 lg:grid-cols-[1fr_1.15fr] lg:items-start">
-              <div className="lg:sticky lg:top-24">
-                <p className="mb-3 text-sm font-medium">Vista previa</p>
-                <PreviewStage
-                  productId={product.id}
-                  size={size}
-                  color={color}
-                  printZoneKey={zoneKey}
-                  defaultZoneKey={printZones[0]?.key ?? null}
-                  zoneLabel={zone?.label ?? null}
-                  image={image}
-                  onDesignTransformChange={setDesignTransform}
+            <div>
+              <div className="mb-6">
+                <p className="mb-3 text-sm font-medium">
+                  Elegí una o varias zonas de estampado
+                </p>
+                <ZoneSelector
+                  zones={printZones}
+                  addedZones={addedZoneKeys}
+                  activeZone={activeZone}
+                  hasImage={(key) => !!prints[key]?.image}
+                  onAdd={addZone}
+                  onRemove={removeZone}
+                  onSetActive={setActiveZone}
                 />
               </div>
-              <div className="space-y-8">
-                <div>
-                  <p className="mb-3 text-sm font-medium">Tu imagen</p>
-                  <DesignPicker designs={designs} value={image} onChange={setImage} />
+
+              {activeZone ? (
+                <div className="grid gap-10 lg:grid-cols-[1.4fr_1fr] lg:items-start">
+                  <div className="lg:sticky lg:top-24">
+                    <p className="mb-3 text-sm font-medium">Vista previa — {activeZoneLabel}</p>
+                    <PreviewStage
+                      productId={product.id}
+                      size={size}
+                      color={color}
+                      printZoneKey={activeZone}
+                      defaultZoneKey={activeZone}
+                      zoneLabel={activeZoneLabel}
+                      image={prints[activeZone]?.image ?? null}
+                      onDesignTransformChange={setActiveTransform}
+                    />
+                  </div>
+                  <div>
+                    <p className="mb-3 text-sm font-medium">Imagen para {activeZoneLabel}</p>
+                    <DesignPicker
+                      designs={designs}
+                      value={prints[activeZone]?.image ?? null}
+                      onChange={setActiveImage}
+                    />
+                  </div>
                 </div>
-                <div>
-                  <p className="mb-3 text-sm font-medium">Ubicación del estampado</p>
-                  <ZoneSelector zones={printZones} value={zoneKey} onChange={setZoneKey} />
-                </div>
-              </div>
+              ) : (
+                <p className="rounded-xl border border-dashed border-line px-6 py-14 text-center text-sm text-ink-soft">
+                  Elegí al menos una zona arriba para empezar a subir tu diseño.
+                </p>
+              )}
             </div>
           )}
 

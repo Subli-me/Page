@@ -1,41 +1,76 @@
 "use client";
 
 import clsx from "clsx";
-import { Check } from "lucide-react";
+import { Check, Plus, X } from "lucide-react";
 import type { PrintZone } from "@/lib/types";
 
 export function ZoneSelector({
   zones,
-  value,
-  onChange,
+  addedZones,
+  activeZone,
+  hasImage,
+  onAdd,
+  onRemove,
+  onSetActive,
 }: {
   zones: PrintZone[];
-  value: string | null;
-  onChange: (key: string) => void;
+  addedZones: string[];
+  activeZone: string | null;
+  hasImage: (key: string) => boolean;
+  onAdd: (key: string) => void;
+  onRemove: (key: string) => void;
+  onSetActive: (key: string) => void;
 }) {
   return (
-    <div className="grid grid-cols-2 gap-3">
+    <div className="flex flex-wrap gap-2">
       {zones.map((z) => {
-        const active = value === z.key;
+        const added = addedZones.includes(z.key);
+        const active = activeZone === z.key;
         return (
           <button
             key={z.key}
             type="button"
-            onClick={() => onChange(z.key)}
+            onClick={() => (added ? onSetActive(z.key) : onAdd(z.key))}
             className={clsx(
-              "flex items-center justify-between rounded-xl border px-4 py-3.5 text-left text-sm transition-colors",
-              active ? "border-ink bg-ink text-paper" : "border-line hover:border-ink"
+              "group inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm transition-colors",
+              active
+                ? "border-ink bg-ink text-paper"
+                : added
+                ? "border-accent text-ink"
+                : "border-line text-ink-soft hover:border-ink hover:text-ink"
             )}
           >
-            <span>
-              {z.label}
-              {z.extra_price > 0 && (
-                <span className={clsx("ml-1.5 text-xs", active ? "text-paper/70" : "text-ink-soft")}>
-                  +${z.extra_price.toLocaleString("es-AR")}
-                </span>
-              )}
-            </span>
-            {active && <Check size={15} className="shrink-0 text-lime" />}
+            {added ? (
+              hasImage(z.key) ? (
+                <Check size={13} className={active ? "text-lime" : "text-accent"} />
+              ) : (
+                <span className={clsx("h-1.5 w-1.5 rounded-full", active ? "bg-lime" : "bg-accent")} />
+              )
+            ) : (
+              <Plus size={13} />
+            )}
+            {z.label}
+            {z.extra_price > 0 && (
+              <span className={clsx("text-xs", active ? "text-paper/70" : "text-ink-soft")}>
+                +${z.extra_price.toLocaleString("es-AR")}
+              </span>
+            )}
+            {added && (
+              <span
+                role="button"
+                tabIndex={0}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRemove(z.key);
+                }}
+                className={clsx(
+                  "-mr-1 ml-0.5 rounded-full p-0.5",
+                  active ? "hover:bg-paper/20" : "hover:bg-accent-soft"
+                )}
+              >
+                <X size={12} />
+              </span>
+            )}
           </button>
         );
       })}

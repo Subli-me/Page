@@ -126,21 +126,33 @@ export type SiteSettings = {
   footer_copyright_suffix: string;
 };
 
+export type OrderItem = {
+  id: string;
+  order_id: string;
+  print_zone_key: string;
+  image_url: string;
+  image_public_id: string;
+  design_transform: { tx: number; ty: number; scale: number; rotation: number } | null;
+  created_at: string;
+};
+
 export type Order = {
   id: string;
   product_id: string | null;
   size: string;
   color: string | null;
-  print_zone_key: string;
-  image_url: string;
-  image_public_id: string;
+  // Compatibilidad con pedidos viejos de un solo estampado. Los pedidos
+  // nuevos guardan sus estampados en order_items.
+  print_zone_key: string | null;
+  image_url: string | null;
+  image_public_id: string | null;
+  design_transform: { tx: number; ty: number; scale: number; rotation: number } | null;
   customer_name: string;
   customer_email: string;
   customer_phone: string | null;
   notes: string | null;
   status: OrderStatus;
   total_price: number | null;
-  design_transform: { tx: number; ty: number; scale: number; rotation: number } | null;
   created_at: string;
   updated_at: string;
 };
