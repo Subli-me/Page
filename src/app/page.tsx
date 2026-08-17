@@ -28,6 +28,7 @@ export default async function Home({
     searchParams,
   ]);
   const editing = canEdit && sp.edit === "1";
+  const wantsEditButNotAllowed = sp.edit === "1" && !canEdit;
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -165,6 +166,16 @@ export default async function Home({
 
       <Footer />
       {editing && <EditModeBanner />}
+      {wantsEditButNotAllowed && (
+        <div className="fixed inset-x-0 bottom-4 z-100 flex justify-center px-4">
+          <div className="flex items-center gap-3 rounded-full bg-accent px-5 py-3 text-sm text-paper shadow-xl">
+            Necesitás iniciar sesión como admin para editar esta página.
+            <Link href="/admin/login" className="rounded-full bg-paper/20 px-3 py-1.5 text-xs hover:bg-paper/30">
+              Iniciar sesión
+            </Link>
+          </div>
+        </div>
+      )}
     </EditModeProvider>
   );
 }
