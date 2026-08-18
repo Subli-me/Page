@@ -44,6 +44,26 @@ export function ProductsAdmin({
     });
   }
 
+  async function moveProduct(index: number, direction: "up" | "down") {
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= products.length) return;
+
+    const newProducts = [...products];
+    const [moved] = newProducts.splice(index, 1);
+    newProducts.splice(targetIndex, 0, moved);
+
+    const updatedWithOrder = newProducts.map((p, idx) => ({ ...p, sort_order: idx + 1 }));
+    setProducts(updatedWithOrder);
+
+    await fetch("/api/admin/products/reorder", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        items: updatedWithOrder.map((p) => ({ id: p.id, sort_order: p.sort_order })),
+      }),
+    });
+  }
+
   async function addProduct() {
     if (!newProduct.name.trim()) return;
     const res = await fetch("/api/admin/products", {
@@ -57,7 +77,9 @@ export function ProductsAdmin({
     });
     const json = await res.json();
     if (json.product) {
-      setProducts((prev) => [...prev, json.product]);
+      const nextSortOrder = products.length + 1;
+      const prod = { ...json.product, sort_order: nextSortOrder };
+      setProducts((prev) => [...prev, prod]);
       setNewProduct({ name: "", price: "0", cost: "0" });
     }
   }
@@ -141,6 +163,7 @@ export function ProductsAdmin({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-line bg-panel text-left text-ink-soft">
+                <th className="px-4 py-3 font-medium text-center w-24">Orden</th>
                 <th className="px-4 py-3 font-medium">Producto</th>
                 <th className="px-4 py-3 font-medium">Precio venta</th>
                 <th className="px-4 py-3 font-medium">Costo</th>
@@ -150,9 +173,14 @@ export function ProductsAdmin({
               </tr>
             </thead>
             <tbody>
-              {products.map((p) => (
+              {products.map((p, index) => (
                 <ProductRow
                   key={p.id}
+                  index={index}
+                  isFirst={index === 0}
+                  isLast={index === products.length - 1}
+                  onMoveUp={() => moveProduct(index, "up")}
+                  onMoveDown={() => moveProduct(index, "down")}
                   product={p}
                   sizes={sizes.filter((s) => s.product_id === p.id)}
                   colors={colors.filter((c) => c.product_id === p.id)}
@@ -256,6 +284,11 @@ function ProductRow({
   sizes,
   colors,
   expanded,
+  index,
+  isFirst,
+  isLast,
+  onMoveUp,
+  onMoveDown,
   onToggleExpand,
   onSaveField,
   onToggleActive,
@@ -269,6 +302,11 @@ function ProductRow({
   sizes: ProductSize[];
   colors: ProductColor[];
   expanded: boolean;
+  index: number;
+  isFirst: boolean;
+  isLast: boolean;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
   onToggleExpand: () => void;
   onSaveField: (id: string, field: "base_price" | "base_cost", value: number) => void;
   onToggleActive: (id: string, active: boolean) => void;
@@ -285,6 +323,37 @@ function ProductRow({
   return (
     <>
       <tr className="border-b border-line last:border-0">
+        <td className="px-4 py-3">
+          <div className="flex items-center justify-center gap-1">
+            <button
+              type="button"
+              onClick={onMoveUp}
+              disabled={isFirst}
+              title="Mover arriba"
+              className={clsx(
+                "rounded p-1 text-ink-soft transition-colors",
+                isFirst ? "opacity-20 cursor-not-allowed" : "hover:bg-accent-soft hover:text-accent"
+              )}
+            >
+              <ChevronUp size={16} />
+            </button>
+            <span className="w-5 text-center text-xs font-mono text-ink-soft">
+              {index + 1}
+            </span>
+            <button
+              type="button"
+              onClick={onMoveDown}
+              disabled={isLast}
+              title="Mover abajo"
+              className={clsx(
+                "rounded p-1 text-ink-soft transition-colors",
+                isLast ? "opacity-20 cursor-not-allowed" : "hover:bg-accent-soft hover:text-accent"
+              )}
+            >
+              <ChevronDown size={16} />
+            </button>
+          </div>
+        </td>
         <td className="px-4 py-3 font-medium">
           <button type="button" onClick={onToggleExpand} className="inline-flex items-center gap-1.5 hover:text-accent">
             {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
@@ -317,7 +386,7 @@ function ProductRow({
 
       {expanded && (
         <tr className="border-b border-line bg-paper/60 last:border-0">
-          <td colSpan={6} className="px-4 py-4">
+          <td colSpan={7} className="px-4 py-4">
             <div className="grid gap-6 sm:grid-cols-2">
               <div>
                 <p className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-soft">Talles</p>
