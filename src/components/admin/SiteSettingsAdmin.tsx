@@ -132,11 +132,82 @@ export function SiteSettingsAdmin({ initial }: { initial: SiteSettings }) {
         </div>
 
         <h3 className="mt-8 mb-3 text-sm font-semibold text-white/80">Enlaces a Redes Sociales</h3>
-        <div className="grid gap-6 sm:grid-cols-2">
-          <EditableText label="Instagram URL" value={settings.footer_instagram_url} onSave={(v) => save("footer_instagram_url", v)} />
-          <EditableText label="Facebook URL" value={settings.footer_facebook_url} onSave={(v) => save("footer_facebook_url", v)} />
-          <EditableText label="TikTok URL" value={settings.footer_tiktok_url} onSave={(v) => save("footer_tiktok_url", v)} />
-          <EditableText label="Twitter / X URL" value={settings.footer_twitter_url} onSave={(v) => save("footer_twitter_url", v)} />
+        <div className="space-y-3">
+          {(settings.footer_social_links ?? []).map((social, idx) => (
+            <div key={idx} className="flex gap-4 items-end bg-black/10 p-3 rounded-lg border border-white/5">
+              <div className="flex-1">
+                <label className="text-xs text-white/50 block mb-1">Nombre (ej. Instagram)</label>
+                <input
+                  type="text"
+                  value={social.label}
+                  onChange={(e) => {
+                    const newList = [...(settings.footer_social_links ?? [])];
+                    newList[idx] = { ...social, label: e.target.value };
+                    setSettings((prev) => ({ ...prev, footer_social_links: newList }));
+                  }}
+                  onBlur={() => save("footer_social_links", settings.footer_social_links)}
+                  className="input"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="text-xs text-white/50 block mb-1">Icono/Plataforma (instagram, facebook, tiktok, twitter, whatsapp, youtube)</label>
+                <select
+                  value={social.platform}
+                  onChange={(e) => {
+                    const newList = [...(settings.footer_social_links ?? [])];
+                    newList[idx] = { ...social, platform: e.target.value };
+                    setSettings((prev) => ({ ...prev, footer_social_links: newList }));
+                    save("footer_social_links", newList);
+                  }}
+                  className="input py-2.5 bg-neutral-900 border border-white/10 text-white rounded outline-none"
+                >
+                  <option value="instagram">Instagram</option>
+                  <option value="facebook">Facebook</option>
+                  <option value="tiktok">TikTok</option>
+                  <option value="twitter">Twitter / X</option>
+                  <option value="whatsapp">WhatsApp</option>
+                  <option value="youtube">YouTube</option>
+                  <option value="other">Otro (Texto)</option>
+                </select>
+              </div>
+              <div className="flex-2">
+                <label className="text-xs text-white/50 block mb-1">URL Enlace</label>
+                <input
+                  type="text"
+                  value={social.url}
+                  onChange={(e) => {
+                    const newList = [...(settings.footer_social_links ?? [])];
+                    newList[idx] = { ...social, url: e.target.value };
+                    setSettings((prev) => ({ ...prev, footer_social_links: newList }));
+                  }}
+                  onBlur={() => save("footer_social_links", settings.footer_social_links)}
+                  className="input"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={async () => {
+                  const newList = (settings.footer_social_links ?? []).filter((_, i) => i !== idx);
+                  setSettings((prev) => ({ ...prev, footer_social_links: newList }));
+                  await save("footer_social_links", newList);
+                }}
+                className="bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 px-3.5 py-2.5 rounded text-sm transition-colors cursor-pointer"
+              >
+                Eliminar
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={async () => {
+              const newList = [...(settings.footer_social_links ?? []), { platform: "instagram", url: "https://", label: "Instagram" }];
+              setSettings((prev) => ({ ...prev, footer_social_links: newList }));
+              await save("footer_social_links", newList);
+            }}
+            className="bg-[var(--accent)] hover:opacity-90 px-4 py-2 rounded text-sm text-white font-medium cursor-pointer"
+          >
+            + Agregar Red Social
+          </button>
         </div>
 
         <h3 className="mt-8 mb-3 text-sm font-semibold text-white/80">Newsletter</h3>

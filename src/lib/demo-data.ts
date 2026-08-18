@@ -100,10 +100,12 @@ export const DEMO_SETTINGS: SiteSettings = {
     "Es un espacio donde las ideas se convierten en remeras. Diseñamos y estampamos prendas con impresión DTG, desde diseños originales hasta pedidos totalmente personalizados.",
   footer_phone: "+54 9 11 1234-5678",
   footer_address: "Belgrano, Capital Federal",
-  footer_instagram_url: "https://instagram.com/sublime",
-  footer_facebook_url: "https://facebook.com/sublime",
-  footer_tiktok_url: "https://tiktok.com/@sublime",
-  footer_twitter_url: "https://twitter.com/sublime",
+  footer_social_links: [
+    { platform: "instagram", url: "https://instagram.com/sublime", label: "Instagram" },
+    { platform: "facebook", url: "https://facebook.com/sublime", label: "Facebook" },
+    { platform: "tiktok", url: "https://tiktok.com/@sublime", label: "TikTok" },
+    { platform: "twitter", url: "https://twitter.com/sublime", label: "Twitter" }
+  ],
   footer_newsletter_title: "Newsletter",
   footer_newsletter_subtitle: "Recibí ofertas exclusivas y novedades directamente en tu email.",
 

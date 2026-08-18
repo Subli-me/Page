@@ -97,10 +97,8 @@ export type SiteSettings = {
   footer_description: string;
   footer_phone: string;
   footer_address: string;
-  footer_instagram_url: string;
-  footer_facebook_url: string;
-  footer_tiktok_url: string;
-  footer_twitter_url: string;
+  // Footer social dynamic list
+  footer_social_links: { platform: string; url: string; label: string }[];
   footer_newsletter_title: string;
   footer_newsletter_subtitle: string;
 
