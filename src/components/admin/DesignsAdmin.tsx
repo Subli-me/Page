@@ -139,6 +139,15 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
     });
   }
 
+  async function updateCategory(id: string, category: string | null) {
+    setDesigns((prev) => prev.map((d) => (d.id === id ? { ...d, category } : d)));
+    await fetch(`/api/admin/designs/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ category }),
+    });
+  }
+
   async function removeDesign(id: string) {
     setDesigns((prev) => prev.filter((d) => d.id !== id));
     setSelectedIds((prev) => prev.filter((item) => item !== id));
@@ -418,6 +427,20 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
                   <p className="mt-2 truncate text-xs font-medium text-ink" title={d.name}>
                     {d.name}
                   </p>
+
+                  {/* Selector de color de remera */}
+                  <div className="mt-1.5">
+                    <select
+                      value={d.category ?? ""}
+                      onChange={(e) => updateCategory(d.id, e.target.value || null)}
+                      className="w-full rounded-lg border border-line bg-paper px-2 py-1 text-[11px] text-ink focus:border-ink focus:outline-none"
+                    >
+                      <option value="">Sin clasificar</option>
+                      <option value="blanca">Remera blanca</option>
+                      <option value="negra">Remera negra</option>
+                      <option value="ambas">Ambas</option>
+                    </select>
+                  </div>
 
                   <div className="mt-2 flex items-center justify-between border-t border-line/60 pt-2">
                     <label className="flex items-center gap-1.5 text-[11px] text-ink-soft">
