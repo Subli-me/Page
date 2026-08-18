@@ -149,7 +149,7 @@ export default async function Home({
 
         {/* Catálogo */}
         <section id="catalogo" className="border-t border-line/70 bg-panel">
-          <div className="mx-auto max-w-6xl px-6 py-24">
+          <div className="mx-auto max-w-7xl px-6 py-24">
             <Reveal>
               <div className="mb-12 flex items-end justify-between">
                 <h2 className="font-display text-4xl italic tracking-tight">Catálogo</h2>

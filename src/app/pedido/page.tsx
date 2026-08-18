@@ -45,7 +45,7 @@ export default async function PedidoPage() {
     <>
       <Nav />
       <main className="flex-1">
-        <section className="mx-auto max-w-4xl px-6 pt-16 pb-24 sm:pt-20">
+        <section className="mx-auto max-w-6xl px-6 pt-16 pb-24 sm:pt-20">
           <p className="mb-3 text-sm uppercase tracking-[0.2em] text-accent">
             {settings.pedido_badge}
           </p>

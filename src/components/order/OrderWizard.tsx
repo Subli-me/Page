@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import clsx from "clsx";
-import { Check, ChevronLeft, ChevronRight } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Shirt } from "lucide-react";
 import type { DesignCatalogItem, PrintZone, Product, ProductColor, ProductSize } from "@/lib/types";
 import { type UploadedImage } from "./ImageUploader";
 import { DesignPicker } from "./DesignPicker";
@@ -183,7 +183,7 @@ export function OrderWizard({
           className="rounded-2xl border border-line bg-panel p-8"
         >
           {step === 0 && (
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
               {products.map((p) => (
                 <button
                   key={p.id}
@@ -196,18 +196,22 @@ export function OrderWizard({
                     setActiveZone(null);
                   }}
                   className={clsx(
-                    "overflow-hidden rounded-xl border text-left transition-colors",
-                    productId === p.id ? "border-ink bg-accent-soft/40" : "border-line hover:border-ink"
+                    "group overflow-hidden rounded-xl border text-left transition-all",
+                    productId === p.id ? "border-ink bg-accent-soft/40 ring-2 ring-ink" : "border-line hover:border-ink hover:shadow-sm"
                   )}
                 >
-                  <div className="relative aspect-4/3 bg-accent-soft">
-                    {p.image_url && (
-                      <Image src={p.image_url} alt={p.name} fill className="object-cover" />
+                  <div className="relative aspect-[4/5] bg-accent-soft overflow-hidden">
+                    {p.image_url ? (
+                      <Image src={p.image_url} alt={p.name} fill className="object-cover transition-transform duration-300 group-hover:scale-105" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-ink-soft">
+                        <Shirt size={36} className="text-accent" />
+                      </div>
                     )}
                   </div>
-                  <div className="p-4">
-                    <p className="font-display text-lg italic">{p.name}</p>
-                    <p className="mt-1 text-sm text-ink-soft">${p.base_price.toLocaleString("es-AR")}</p>
+                  <div className="p-3">
+                    <p className="font-display text-sm sm:text-base italic truncate text-ink">{p.name}</p>
+                    <p className="mt-0.5 text-xs text-ink-soft">${p.base_price.toLocaleString("es-AR")}</p>
                   </div>
                 </button>
               ))}

@@ -17,44 +17,49 @@ export function ProductGrid({ products }: { products: Product[] }) {
   }
 
   return (
-    <div className="grid gap-x-8 gap-y-16 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 sm:gap-5">
       {products.map((p, i) => (
-        <Reveal key={p.id} delay={i * 0.08}>
+        <Reveal key={p.id} delay={i * 0.05}>
           <Link href={`/pedido?producto=${p.slug}`} className="group block">
             <motion.div
-              whileHover={{ rotate: i % 2 === 0 ? -1.5 : 1.5, scale: 1.02 }}
+              whileHover={{ y: -4, scale: 1.02 }}
               transition={{ type: "spring", stiffness: 260, damping: 20 }}
-              className="relative aspect-[4/5] overflow-hidden rounded-3xl bg-accent-soft"
+              className="relative aspect-[4/5] overflow-hidden rounded-2xl border border-line bg-accent-soft"
             >
               {p.image_url ? (
                 <Image
                   src={p.image_url}
                   alt={p.name}
                   fill
-                  className="object-cover transition-transform duration-700 group-hover:scale-110"
+                  className="object-cover transition-transform duration-500 group-hover:scale-108"
                 />
               ) : (
                 <div className="flex h-full items-center justify-center">
-                  <Shirt size={56} strokeWidth={1} className="text-accent" />
+                  <Shirt size={44} strokeWidth={1} className="text-accent" />
                 </div>
               )}
-              <div className="absolute right-4 top-4 flex h-10 w-10 -translate-y-2 items-center justify-center rounded-full bg-dark text-lime opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
-                <ArrowUpRight size={18} />
+              <div className="absolute right-3 top-3 flex h-8 w-8 -translate-y-2 items-center justify-center rounded-full bg-dark text-lime opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+                <ArrowUpRight size={15} />
               </div>
-              <span className="absolute left-4 top-4 rounded-full bg-dark/85 px-3 py-1 text-xs text-paper">
+              <span className="absolute left-3 top-3 rounded-full bg-dark/85 px-2.5 py-0.5 text-[11px] font-medium text-paper">
                 DTF
               </span>
             </motion.div>
-            <div className="mt-4 flex items-start justify-between">
-              <div>
-                <h3 className="font-display text-xl italic">{p.name}</h3>
-                {p.description && (
-                  <p className="mt-1 text-sm text-ink-soft">{p.description}</p>
-                )}
+            <div className="mt-3">
+              <h3 className="font-display text-base sm:text-lg italic text-ink group-hover:text-accent transition-colors line-clamp-1">
+                {p.name}
+              </h3>
+              {p.description && (
+                <p className="mt-0.5 text-xs text-ink-soft line-clamp-1">{p.description}</p>
+              )}
+              <div className="mt-1 flex items-center justify-between">
+                <span className="font-medium text-sm sm:text-base">
+                  ${p.base_price.toLocaleString("es-AR")}
+                </span>
+                <span className="text-[11px] font-medium text-accent opacity-0 transition-opacity group-hover:opacity-100">
+                  Elegir →
+                </span>
               </div>
-              <span className="whitespace-nowrap font-medium">
-                ${p.base_price.toLocaleString("es-AR")}
-              </span>
             </div>
           </Link>
         </Reveal>
