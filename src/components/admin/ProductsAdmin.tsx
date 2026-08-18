@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
+import Image from "next/image";
+import { ChevronDown, ChevronUp, Plus, Shirt, Trash2 } from "lucide-react";
 import clsx from "clsx";
 import type { PrintZone, Product, ProductColor, ProductSize } from "@/lib/types";
 import { EditableNumber } from "./EditableNumber";
+import { ImageUploader } from "@/components/order/ImageUploader";
 
 export function ProductsAdmin({
   initialProducts,
@@ -26,7 +28,11 @@ export function ProductsAdmin({
   const [newProduct, setNewProduct] = useState({ name: "", price: "0", cost: "0" });
   const [newZone, setNewZone] = useState({ label: "", extraPrice: "0", extraCost: "0" });
 
-  async function saveProduct(id: string, field: "base_price" | "base_cost", value: number) {
+  async function saveProduct(
+    id: string,
+    field: "base_price" | "base_cost" | "image_url" | "name" | "description",
+    value: string | number | null
+  ) {
     setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, [field]: value } : p)));
     await fetch(`/api/admin/products/${id}`, {
       method: "PATCH",
@@ -308,7 +314,11 @@ function ProductRow({
   onMoveUp: () => void;
   onMoveDown: () => void;
   onToggleExpand: () => void;
-  onSaveField: (id: string, field: "base_price" | "base_cost", value: number) => void;
+  onSaveField: (
+    id: string,
+    field: "base_price" | "base_cost" | "image_url" | "name" | "description",
+    value: string | number | null
+  ) => void;
   onToggleActive: (id: string, active: boolean) => void;
   onRemove: (id: string) => void;
   onAddSize: (productId: string, size: string) => void;
@@ -355,10 +365,26 @@ function ProductRow({
           </div>
         </td>
         <td className="px-4 py-3 font-medium">
-          <button type="button" onClick={onToggleExpand} className="inline-flex items-center gap-1.5 hover:text-accent">
-            {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-            {product.name}
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={onToggleExpand}
+              className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-line bg-accent-soft hover:opacity-80 transition-opacity"
+              title="Cambiar foto / detalles"
+            >
+              {product.image_url ? (
+                <Image src={product.image_url} alt={product.name} fill className="object-cover" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-ink-soft">
+                  <Shirt size={18} />
+                </div>
+              )}
+            </button>
+            <button type="button" onClick={onToggleExpand} className="inline-flex items-center gap-1.5 hover:text-accent text-left">
+              {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              <span>{product.name}</span>
+            </button>
+          </div>
         </td>
         <td className="px-4 py-3">
           <EditableNumber value={product.base_price} onSave={(v) => onSaveField(product.id, "base_price", v)} />
@@ -386,70 +412,112 @@ function ProductRow({
 
       {expanded && (
         <tr className="border-b border-line bg-paper/60 last:border-0">
-          <td colSpan={7} className="px-4 py-4">
-            <div className="grid gap-6 sm:grid-cols-2">
-              <div>
-                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-soft">Talles</p>
-                <div className="flex flex-wrap gap-2">
-                  {sizes.map((s) => (
-                    <span key={s.id} className="inline-flex items-center gap-1.5 rounded-full border border-line bg-panel px-3 py-1 text-xs">
-                      {s.size}
-                      <button type="button" onClick={() => onRemoveSize(s.id)} className="text-ink-soft hover:text-accent">
-                        <Trash2 size={11} />
-                      </button>
-                    </span>
-                  ))}
+          <td colSpan={7} className="px-4 py-6">
+            <div className="space-y-6">
+              {/* Foto de la prenda y detalles principales */}
+              <div className="grid gap-6 sm:grid-cols-[220px_1fr] items-start rounded-xl border border-line bg-panel p-4">
+                <div>
+                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-soft">
+                    Foto de portada
+                  </p>
+                  <div className="w-full">
+                    <ImageUploader
+                      value={product.image_url ? { url: product.image_url, publicId: "" } : null}
+                      onChange={(img) => onSaveField(product.id, "image_url", img?.url ?? null)}
+                    />
+                  </div>
                 </div>
-                <div className="mt-2 flex gap-2">
-                  <input
-                    className="input h-8 w-24 text-xs"
-                    placeholder="Ej: XXL"
-                    value={newSize}
-                    onChange={(e) => setNewSize(e.target.value)}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => { onAddSize(product.id, newSize); setNewSize(""); }}
-                    className="rounded-full bg-ink px-3 py-1 text-xs text-paper hover:bg-accent"
-                  >
-                    Agregar
-                  </button>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-medium uppercase tracking-wide text-ink-soft mb-1">
+                      Nombre de la prenda
+                    </label>
+                    <input
+                      className="input w-full max-w-md"
+                      defaultValue={product.name}
+                      onBlur={(e) => e.target.value !== product.name && onSaveField(product.id, "name", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium uppercase tracking-wide text-ink-soft mb-1">
+                      Descripción (opcional)
+                    </label>
+                    <input
+                      className="input w-full max-w-md"
+                      defaultValue={product.description ?? ""}
+                      placeholder="Ej: Algodón 24/1 corte oversize..."
+                      onBlur={(e) => e.target.value !== (product.description ?? "") && onSaveField(product.id, "description", e.target.value)}
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-soft">Colores</p>
-                <div className="flex flex-wrap gap-2">
-                  {colors.map((c) => (
-                    <span key={c.id} className="inline-flex items-center gap-1.5 rounded-full border border-line bg-panel px-3 py-1 text-xs">
-                      <span className="h-3 w-3 rounded-full border border-line" style={{ backgroundColor: c.hex }} />
-                      {c.name}
-                      <button type="button" onClick={() => onRemoveColor(c.id)} className="text-ink-soft hover:text-accent">
-                        <Trash2 size={11} />
-                      </button>
-                    </span>
-                  ))}
+              {/* Talles y Colores */}
+              <div className="grid gap-6 sm:grid-cols-2">
+                <div>
+                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-soft">Talles</p>
+                  <div className="flex flex-wrap gap-2">
+                    {sizes.map((s) => (
+                      <span key={s.id} className="inline-flex items-center gap-1.5 rounded-full border border-line bg-panel px-3 py-1 text-xs">
+                        {s.size}
+                        <button type="button" onClick={() => onRemoveSize(s.id)} className="text-ink-soft hover:text-accent">
+                          <Trash2 size={11} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="mt-2 flex gap-2">
+                    <input
+                      className="input h-8 w-24 text-xs"
+                      placeholder="Ej: XXL"
+                      value={newSize}
+                      onChange={(e) => setNewSize(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => { onAddSize(product.id, newSize); setNewSize(""); }}
+                      className="rounded-full bg-ink px-3 py-1 text-xs text-paper hover:bg-accent"
+                    >
+                      Agregar
+                    </button>
+                  </div>
                 </div>
-                <div className="mt-2 flex items-center gap-2">
-                  <input
-                    className="input h-8 w-28 text-xs"
-                    placeholder="Ej: Bordo"
-                    value={newColorName}
-                    onChange={(e) => setNewColorName(e.target.value)}
-                  />
-                  <input
-                    type="color"
-                    value={newColorHex}
-                    onChange={(e) => setNewColorHex(e.target.value)}
-                    className="h-8 w-10 cursor-pointer rounded border border-line bg-transparent p-0.5"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => { onAddColor(product.id, newColorName, newColorHex); setNewColorName(""); }}
-                    className="rounded-full bg-ink px-3 py-1 text-xs text-paper hover:bg-accent"
-                  >
-                    Agregar
-                  </button>
+
+                <div>
+                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-soft">Colores</p>
+                  <div className="flex flex-wrap gap-2">
+                    {colors.map((c) => (
+                      <span key={c.id} className="inline-flex items-center gap-1.5 rounded-full border border-line bg-panel px-3 py-1 text-xs">
+                        <span className="h-3 w-3 rounded-full border border-line" style={{ backgroundColor: c.hex }} />
+                        {c.name}
+                        <button type="button" onClick={() => onRemoveColor(c.id)} className="text-ink-soft hover:text-accent">
+                          <Trash2 size={11} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="mt-2 flex items-center gap-2">
+                    <input
+                      className="input h-8 w-28 text-xs"
+                      placeholder="Ej: Bordo"
+                      value={newColorName}
+                      onChange={(e) => setNewColorName(e.target.value)}
+                    />
+                    <input
+                      type="color"
+                      value={newColorHex}
+                      onChange={(e) => setNewColorHex(e.target.value)}
+                      className="h-8 w-10 cursor-pointer rounded border border-line bg-transparent p-0.5"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => { onAddColor(product.id, newColorName, newColorHex); setNewColorName(""); }}
+                      className="rounded-full bg-ink px-3 py-1 text-xs text-paper hover:bg-accent"
+                    >
+                      Agregar
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
