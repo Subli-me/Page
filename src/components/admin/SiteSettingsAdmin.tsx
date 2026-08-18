@@ -114,13 +114,57 @@ export function SiteSettingsAdmin({ initial }: { initial: SiteSettings }) {
       </Section>
 
       <Section title="Footer">
+        <h3 className="mb-3 text-sm font-semibold text-white/80">Textos Principales</h3>
         <div className="grid gap-6 sm:grid-cols-2">
           <EditableText label="Título — línea 1" value={settings.footer_headline_line1} onSave={(v) => save("footer_headline_line1", v)} />
           <EditableText label="Título — línea 2 (color lima)" value={settings.footer_headline_line2} onSave={(v) => save("footer_headline_line2", v)} />
-        </div>
-        <div className="mt-6 grid gap-6 sm:grid-cols-2">
           <EditableText label="Tagline" value={settings.footer_tagline} onSave={(v) => save("footer_tagline", v)} />
           <EditableText label="Sufijo del copyright (© año — ___)" value={settings.footer_copyright_suffix} onSave={(v) => save("footer_copyright_suffix", v)} />
+        </div>
+        <div className="mt-4">
+          <EditableText label="Descripción del Footer (Columna 1)" value={settings.footer_description} onSave={(v) => save("footer_description", v)} multiline />
+        </div>
+
+        <h3 className="mt-8 mb-3 text-sm font-semibold text-white/80">Información de Contacto del Footer</h3>
+        <div className="grid gap-6 sm:grid-cols-2">
+          <EditableText label="Teléfono de Contacto" value={settings.footer_phone} onSave={(v) => save("footer_phone", v)} />
+          <EditableText label="Dirección / Ubicación" value={settings.footer_address} onSave={(v) => save("footer_address", v)} />
+        </div>
+
+        <h3 className="mt-8 mb-3 text-sm font-semibold text-white/80">Enlaces a Redes Sociales</h3>
+        <div className="grid gap-6 sm:grid-cols-2">
+          <EditableText label="Instagram URL" value={settings.footer_instagram_url} onSave={(v) => save("footer_instagram_url", v)} />
+          <EditableText label="Facebook URL" value={settings.footer_facebook_url} onSave={(v) => save("footer_facebook_url", v)} />
+          <EditableText label="TikTok URL" value={settings.footer_tiktok_url} onSave={(v) => save("footer_tiktok_url", v)} />
+          <EditableText label="Twitter / X URL" value={settings.footer_twitter_url} onSave={(v) => save("footer_twitter_url", v)} />
+        </div>
+
+        <h3 className="mt-8 mb-3 text-sm font-semibold text-white/80">Newsletter</h3>
+        <div className="grid gap-6 sm:grid-cols-2">
+          <EditableText label="Título de Newsletter" value={settings.footer_newsletter_title} onSave={(v) => save("footer_newsletter_title", v)} />
+          <EditableText label="Subtítulo de Newsletter" value={settings.footer_newsletter_subtitle} onSave={(v) => save("footer_newsletter_subtitle", v)} multiline />
+        </div>
+
+        <h3 className="mt-8 mb-3 text-sm font-semibold text-white/80">Enlaces de la Columna "Información"</h3>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <EditableText label="Link: Inicio" value={settings.footer_nav_inicio} onSave={(v) => save("footer_nav_inicio", v)} />
+          <EditableText label="Link: Productos" value={settings.footer_nav_productos} onSave={(v) => save("footer_nav_productos", v)} />
+          <EditableText label="Link: Personalizadas" value={settings.footer_nav_personalizadas} onSave={(v) => save("footer_nav_personalizadas", v)} />
+          <EditableText label="Link: Beneficios" value={settings.footer_nav_beneficios} onSave={(v) => save("footer_nav_beneficios", v)} />
+          <EditableText label="Link: Talles" value={settings.footer_nav_talles} onSave={(v) => save("footer_nav_talles", v)} />
+          <EditableText label="Link: Política" value={settings.footer_nav_politica} onSave={(v) => save("footer_nav_politica", v)} />
+          <EditableText label="Link: Contacto" value={settings.footer_nav_contacto} onSave={(v) => save("footer_nav_contacto", v)} />
+        </div>
+
+        <h3 className="mt-8 mb-3 text-sm font-semibold text-white/80">Enlaces de la Columna "Categorías"</h3>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <EditableText label="Categoría: Remeras" value={settings.footer_cat_remeras} onSave={(v) => save("footer_cat_remeras", v)} />
+          <EditableText label="Categoría: Buzos" value={settings.footer_cat_buzos} onSave={(v) => save("footer_cat_buzos", v)} />
+          <EditableText label="Categoría: Medias" value={settings.footer_cat_medias} onSave={(v) => save("footer_cat_medias", v)} />
+          <EditableText label="Categoría: Gorras" value={settings.footer_cat_gorras} onSave={(v) => save("footer_cat_gorras", v)} />
+          <EditableText label="Categoría: Tote Bag" value={settings.footer_cat_totebag} onSave={(v) => save("footer_cat_totebag", v)} />
+          <EditableText label="Categoría: Combos" value={settings.footer_cat_combos} onSave={(v) => save("footer_cat_combos", v)} />
+          <EditableText label="Categoría: Bermudas" value={settings.footer_cat_bermudas} onSave={(v) => save("footer_cat_bermudas", v)} />
         </div>
       </Section>
 
