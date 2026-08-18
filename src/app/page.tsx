@@ -5,8 +5,10 @@ import { Footer } from "@/components/Footer";
 import { Marquee } from "@/components/Marquee";
 import { Reveal } from "@/components/Reveal";
 import { ProductGrid } from "@/components/ProductGrid";
+import { DesignGrid } from "@/components/DesignGrid";
 import { HeroImage } from "@/components/HeroImage";
 import { getActiveProducts } from "@/lib/products";
+import { getActiveDesigns } from "@/lib/designs";
 import { getSiteSettings } from "@/lib/settings";
 import { SITE_URL } from "@/lib/site-url";
 import { isAuthorizedAdmin } from "@/lib/admin-auth";
@@ -21,8 +23,9 @@ export default async function Home({
 }: {
   searchParams: Promise<{ edit?: string }>;
 }) {
-  const [products, settings, canEdit, sp] = await Promise.all([
+  const [products, designs, settings, canEdit, sp] = await Promise.all([
     getActiveProducts(),
+    getActiveDesigns(),
     getSiteSettings(),
     isAuthorizedAdmin(),
     searchParams,
@@ -162,6 +165,43 @@ export default async function Home({
             <ProductGrid products={products} />
           </div>
         </section>
+
+        {/* Catálogo de diseños */}
+        {designs.length > 0 && (
+          <section id="disenos" className="border-t border-line/70">
+            <div className="mx-auto max-w-7xl px-6 py-16 sm:py-24">
+              <Reveal>
+                <div className="mb-10 flex items-end justify-between">
+                  <div>
+                    <h2 className="font-display text-4xl italic tracking-tight">
+                      Catálogo de diseños
+                    </h2>
+                    <p className="mt-2 text-sm text-ink-soft">
+                      Elegí uno de nuestros diseños o subí el tuyo propio al hacer tu pedido.
+                    </p>
+                  </div>
+                  <Link
+                    href="/pedido"
+                    className="hidden sm:inline-flex items-center gap-2 rounded-full border border-line px-5 py-2.5 text-sm hover:border-ink hover:bg-panel transition-colors"
+                  >
+                    Hacer pedido <ArrowUpRight size={15} />
+                  </Link>
+                </div>
+              </Reveal>
+
+              <DesignGrid designs={designs} />
+
+              <div className="mt-10 flex sm:hidden justify-center">
+                <Link
+                  href="/pedido"
+                  className="inline-flex items-center gap-2 rounded-full border border-line px-6 py-3 text-sm hover:border-ink hover:bg-panel transition-colors"
+                >
+                  Hacer pedido <ArrowUpRight size={15} />
+                </Link>
+              </div>
+            </div>
+          </section>
+        )}
       </main>
 
       <Footer />
