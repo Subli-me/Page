@@ -130,18 +130,18 @@ export default async function Home({
         <Marquee text={settings.marquee_text} />
 
         {/* Cómo funciona */}
-        <section className="mx-auto max-w-6xl px-6 py-24">
+        <section className="mx-auto max-w-7xl px-6 py-12 sm:py-16">
           <Reveal>
-            <h2 className="mb-14 font-display text-4xl italic tracking-tight">
+            <h2 className="mb-8 font-display text-3xl sm:text-4xl italic tracking-tight">
               Cómo funciona
             </h2>
           </Reveal>
-          <div className="grid gap-12 sm:grid-cols-3">
+          <div className="grid gap-8 sm:grid-cols-3 lg:gap-12">
             {steps.map((s, i) => (
               <Reveal key={s.n} delay={i * 0.1}>
-                <span className="font-display text-6xl italic text-accent/30">{s.n}</span>
-                <EditableText field={s.titleField} value={s.title} as="h3" className="mt-4 block font-display text-2xl" />
-                <EditableText field={s.textField} value={s.text} as="p" multiline className="mt-2 block text-sm text-ink-soft" />
+                <span className="font-display text-5xl sm:text-6xl italic text-accent/30">{s.n}</span>
+                <EditableText field={s.titleField} value={s.title} as="h3" className="mt-3 block font-display text-xl sm:text-2xl" />
+                <EditableText field={s.textField} value={s.text} as="p" multiline className="mt-1.5 block text-sm text-ink-soft leading-relaxed" />
               </Reveal>
             ))}
           </div>
