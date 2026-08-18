@@ -12,21 +12,33 @@ export async function Nav() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-dark/90 backdrop-blur-md">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <Link href="/" className="flex items-center gap-2 font-display text-2xl tracking-tight text-paper">
-          {settings.logo_url ? (
-            <EditableImage field="logo_url" className="relative h-8 w-28">
-              <Image
-                src={settings.logo_url}
-                alt={settings.logo_text || "Subli-me"}
-                fill
-                className="object-contain object-left"
-              />
-            </EditableImage>
-          ) : (
-            <EditableText field="logo_text" value={settings.logo_text} as="span" />
-          )}
+      <div className="relative mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
+        {/* Izquierda: Logo circular */}
+        <Link href="/" className="group flex items-center gap-2">
+          <EditableImage field="logo_url" className="relative h-11 w-11 shrink-0 overflow-hidden rounded-full transition-transform duration-200 group-hover:scale-105">
+            <Image
+              src={settings.logo_url || "/logo.png"}
+              alt={settings.logo_text || "Subli-me"}
+              fill
+              className="object-contain"
+              priority
+            />
+          </EditableImage>
         </Link>
+
+        {/* Centro: Título Subli Me con tipografía de la marca */}
+        <div className="absolute left-1/2 -translate-x-1/2">
+          <Link href="/" className="group block transition-transform duration-200 hover:scale-105">
+            <Image
+              src="/sublime-title.png"
+              alt="Subli Me"
+              width={694}
+              height={246}
+              className="h-8 sm:h-10 w-auto object-contain"
+              priority
+            />
+          </Link>
+        </div>
         <nav className="flex items-center gap-8 text-sm">
           <Link
             href="/#catalogo"
