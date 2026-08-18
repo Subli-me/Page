@@ -96,6 +96,33 @@ export const DEMO_SETTINGS: SiteSettings = {
   footer_headline_line2: "estampado.",
   footer_tagline: "Remeras · Buzos · Chombas, prenda por prenda.",
 
+  footer_description:
+    "Es un espacio donde las ideas se convierten en remeras. Diseñamos y estampamos prendas con impresión DTG, desde diseños originales hasta pedidos totalmente personalizados.",
+  footer_phone: "+54 9 11 1234-5678",
+  footer_address: "Belgrano, Capital Federal",
+  footer_instagram_url: "https://instagram.com/sublime",
+  footer_facebook_url: "https://facebook.com/sublime",
+  footer_tiktok_url: "https://tiktok.com/@sublime",
+  footer_twitter_url: "https://twitter.com/sublime",
+  footer_newsletter_title: "Newsletter",
+  footer_newsletter_subtitle: "Recibí ofertas exclusivas y novedades directamente en tu email.",
+
+  footer_nav_inicio: "Inicio",
+  footer_nav_productos: "Productos",
+  footer_nav_personalizadas: "Personalizadas",
+  footer_nav_beneficios: "Beneficios",
+  footer_nav_talles: "Talles",
+  footer_nav_politica: "Política de cambio",
+  footer_nav_contacto: "Contacto",
+
+  footer_cat_remeras: "Remeras",
+  footer_cat_buzos: "Buzos",
+  footer_cat_medias: "Medias",
+  footer_cat_gorras: "Gorras",
+  footer_cat_totebag: "Tote Bag",
+  footer_cat_combos: "Combos",
+  footer_cat_bermudas: "Bermudas",
+
   contact_email: null,
   contact_phone: null,
   contact_instagram: null,
