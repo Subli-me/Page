@@ -17,7 +17,13 @@ export function SizeChartSection({
   );
   const [activeId, setActiveId] = useState(productsWithMeasurements[0]?.id ?? null);
 
-  if (productsWithMeasurements.length === 0) return null;
+  if (productsWithMeasurements.length === 0) {
+    return (
+      <p className="rounded-2xl border border-line bg-panel/40 px-5 py-8 text-center text-sm text-ink-soft">
+        Todavía no cargamos las medidas de nuestros talles. Escribinos y te ayudamos a elegir.
+      </p>
+    );
+  }
 
   const activeSizes = sizes
     .filter((s) => s.product_id === activeId)

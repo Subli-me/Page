@@ -1,14 +1,17 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { getSiteSettings } from "@/lib/settings";
+import { getActiveProducts, getAllProductSizes } from "@/lib/products";
 import { ProcessModal } from "./ProcessModal";
+import { SizeGuideModal } from "./SizeGuideModal";
 import { EditableText } from "./edit/EditableText";
 import { EditableImage } from "./edit/EditableImage";
 
 import Image from "next/image";
 
 export async function Nav() {
-  const settings = await getSiteSettings();
+  const [settings, products] = await Promise.all([getSiteSettings(), getActiveProducts()]);
+  const sizes = await getAllProductSizes(products.map((p) => p.id));
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-dark/90 backdrop-blur-md">
@@ -46,12 +49,13 @@ export async function Nav() {
           >
             <EditableText field="nav_catalog_label" value={settings.nav_catalog_label} as="span" />
           </Link>
-          <Link
-            href="/#talles"
-            className="link-underline hidden text-paper/70 transition-colors hover:text-paper sm:inline"
-          >
-            <EditableText field="nav_talles_label" value={settings.nav_talles_label} as="span" />
-          </Link>
+          <SizeGuideModal
+            triggerLabel={settings.nav_talles_label}
+            title={settings.talles_title}
+            subtitle={settings.talles_subtitle}
+            products={products}
+            sizes={sizes}
+          />
           <ProcessModal
             triggerLabel={settings.nav_process_label}
             title={settings.process_title}

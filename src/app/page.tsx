@@ -7,8 +7,7 @@ import { Reveal } from "@/components/Reveal";
 import { ProductGrid } from "@/components/ProductGrid";
 import { DesignGrid } from "@/components/DesignGrid";
 import { HeroImage } from "@/components/HeroImage";
-import { SizeChartSection } from "@/components/SizeChartSection";
-import { getActiveProducts, getAllProductSizes } from "@/lib/products";
+import { getActiveProducts } from "@/lib/products";
 import { getActiveDesigns } from "@/lib/designs";
 import { getSiteSettings } from "@/lib/settings";
 import { SITE_URL } from "@/lib/site-url";
@@ -31,7 +30,6 @@ export default async function Home({
     isAuthorizedAdmin(),
     searchParams,
   ]);
-  const sizes = await getAllProductSizes(products.map((p) => p.id));
   const editing = canEdit && sp.edit === "1";
   const wantsEditButNotAllowed = sp.edit === "1" && !canEdit;
 
@@ -204,30 +202,6 @@ export default async function Home({
             </div>
           </section>
         )}
-
-        {/* Talles */}
-        <section id="talles" className="border-t border-line/70 bg-panel">
-          <div className="mx-auto max-w-4xl px-6 py-16 sm:py-24">
-            <Reveal>
-              <EditableText
-                field="talles_title"
-                value={settings.talles_title}
-                as="h2"
-                className="block font-display text-4xl italic tracking-tight"
-              />
-              <EditableText
-                field="talles_subtitle"
-                value={settings.talles_subtitle}
-                as="p"
-                multiline
-                className="mt-3 block max-w-lg text-sm text-ink-soft"
-              />
-              <div className="mt-10">
-                <SizeChartSection products={products} sizes={sizes} />
-              </div>
-            </Reveal>
-          </div>
-        </section>
       </main>
 
       <Footer />
