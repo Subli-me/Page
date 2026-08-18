@@ -42,6 +42,18 @@ export async function getProductSizes(productId: string): Promise<ProductSize[]>
   return data ?? [];
 }
 
+export async function getAllProductSizes(productIds: string[]): Promise<ProductSize[]> {
+  if (isDemoMode()) return DEMO_SIZES.filter((s) => productIds.includes(s.product_id));
+  if (productIds.length === 0) return [];
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("product_sizes")
+    .select("*")
+    .in("product_id", productIds)
+    .order("sort_order");
+  return data ?? [];
+}
+
 export async function getProductColors(productId: string): Promise<ProductColor[]> {
   if (isDemoMode()) return DEMO_COLORS.filter((c) => c.product_id === productId);
   const supabase = await createClient();

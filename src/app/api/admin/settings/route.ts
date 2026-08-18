@@ -57,6 +57,9 @@ const ALLOWED_FIELDS = [
   "process_step4_text",
   "care_title",
   "care_text",
+  "nav_talles_label",
+  "talles_title",
+  "talles_subtitle",
 ];
 
 export async function PATCH(req: Request) {

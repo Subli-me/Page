@@ -145,6 +145,15 @@ export function ProductsAdmin({
     await fetch(`/api/admin/sizes/${id}`, { method: "DELETE" });
   }
 
+  async function saveSizeMeasurement(id: string, field: "chest_cm" | "length_cm", value: number | null) {
+    setSizes((prev) => prev.map((s) => (s.id === id ? { ...s, [field]: value } : s)));
+    await fetch(`/api/admin/sizes/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ [field]: value }),
+    });
+  }
+
   async function addColor(productId: string, name: string, hex: string) {
     if (!name.trim()) return;
     const res = await fetch("/api/admin/colors", {
@@ -197,6 +206,7 @@ export function ProductsAdmin({
                   onRemove={removeProduct}
                   onAddSize={addSize}
                   onRemoveSize={removeSize}
+                  onSaveSizeMeasurement={saveSizeMeasurement}
                   onAddColor={addColor}
                   onRemoveColor={removeColor}
                 />
@@ -301,6 +311,7 @@ function ProductRow({
   onRemove,
   onAddSize,
   onRemoveSize,
+  onSaveSizeMeasurement,
   onAddColor,
   onRemoveColor,
 }: {
@@ -323,6 +334,7 @@ function ProductRow({
   onRemove: (id: string) => void;
   onAddSize: (productId: string, size: string) => void;
   onRemoveSize: (id: string) => void;
+  onSaveSizeMeasurement: (id: string, field: "chest_cm" | "length_cm", value: number | null) => void;
   onAddColor: (productId: string, name: string, hex: string) => void;
   onRemoveColor: (id: string) => void;
 }) {
@@ -456,15 +468,44 @@ function ProductRow({
               {/* Talles y Colores */}
               <div className="grid gap-6 sm:grid-cols-2">
                 <div>
-                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-soft">Talles</p>
-                  <div className="flex flex-wrap gap-2">
+                  <p className="mb-1 text-xs font-medium uppercase tracking-wide text-ink-soft">Talles</p>
+                  <p className="mb-2 text-[11px] text-ink-soft">
+                    Pecho y largo en cm — se muestran en la sección pública de Talles.
+                  </p>
+                  <div className="space-y-1.5">
                     {sizes.map((s) => (
-                      <span key={s.id} className="inline-flex items-center gap-1.5 rounded-full border border-line bg-panel px-3 py-1 text-xs">
-                        {s.size}
-                        <button type="button" onClick={() => onRemoveSize(s.id)} className="text-ink-soft hover:text-accent">
-                          <Trash2 size={11} />
+                      <div key={s.id} className="flex items-center gap-2 rounded-lg border border-line bg-panel px-2 py-1.5 text-xs">
+                        <span className="w-8 shrink-0 font-medium">{s.size}</span>
+                        <label className="flex items-center gap-1 text-ink-soft">
+                          Pecho
+                          <input
+                            type="number"
+                            className="input h-7 w-16 px-2 text-xs"
+                            defaultValue={s.chest_cm ?? ""}
+                            placeholder="cm"
+                            onBlur={(e) => {
+                              const v = e.target.value === "" ? null : Number(e.target.value);
+                              if (v !== s.chest_cm) onSaveSizeMeasurement(s.id, "chest_cm", v);
+                            }}
+                          />
+                        </label>
+                        <label className="flex items-center gap-1 text-ink-soft">
+                          Largo
+                          <input
+                            type="number"
+                            className="input h-7 w-16 px-2 text-xs"
+                            defaultValue={s.length_cm ?? ""}
+                            placeholder="cm"
+                            onBlur={(e) => {
+                              const v = e.target.value === "" ? null : Number(e.target.value);
+                              if (v !== s.length_cm) onSaveSizeMeasurement(s.id, "length_cm", v);
+                            }}
+                          />
+                        </label>
+                        <button type="button" onClick={() => onRemoveSize(s.id)} className="ml-auto text-ink-soft hover:text-accent">
+                          <Trash2 size={12} />
                         </button>
-                      </span>
+                      </div>
                     ))}
                   </div>
                   <div className="mt-2 flex gap-2">

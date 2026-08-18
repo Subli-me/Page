@@ -44,6 +44,13 @@ export const DEMO_PRODUCTS: Product[] = [
   },
 ];
 
+const DEMO_MEASUREMENTS: Record<string, { chest: number; length: number }> = {
+  S: { chest: 48, length: 68 },
+  M: { chest: 51, length: 70 },
+  L: { chest: 54, length: 72 },
+  XL: { chest: 57, length: 74 },
+};
+
 export const DEMO_SIZES: ProductSize[] = DEMO_PRODUCTS.flatMap((p) =>
   ["S", "M", "L", "XL"].map((size, i) => ({
     id: `${p.id}-${size}`,
@@ -51,6 +58,8 @@ export const DEMO_SIZES: ProductSize[] = DEMO_PRODUCTS.flatMap((p) =>
     size,
     price_delta: 0,
     sort_order: i,
+    chest_cm: DEMO_MEASUREMENTS[size].chest,
+    length_cm: DEMO_MEASUREMENTS[size].length,
   }))
 );
 
@@ -138,6 +147,9 @@ export const DEMO_SETTINGS: SiteSettings = {
 
   nav_catalog_label: "Catálogo",
   nav_process_label: "Cómo estampamos",
+  nav_talles_label: "Talles",
+  talles_title: "Guía de talles",
+  talles_subtitle: "Medí una prenda que ya tengas y compará con esta tabla — todas las medidas están en centímetros.",
 
   process_title: "Cómo estampamos",
   process_subtitle: "Del archivo a la prenda terminada, así es el proceso DTF que usamos en cada pedido.",

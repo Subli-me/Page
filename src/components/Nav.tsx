@@ -46,6 +46,12 @@ export async function Nav() {
           >
             <EditableText field="nav_catalog_label" value={settings.nav_catalog_label} as="span" />
           </Link>
+          <Link
+            href="/#talles"
+            className="link-underline hidden text-paper/70 transition-colors hover:text-paper sm:inline"
+          >
+            <EditableText field="nav_talles_label" value={settings.nav_talles_label} as="span" />
+          </Link>
           <ProcessModal
             triggerLabel={settings.nav_process_label}
             title={settings.process_title}

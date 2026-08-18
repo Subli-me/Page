@@ -16,6 +16,8 @@ export type ProductSize = {
   size: string;
   price_delta: number;
   sort_order: number;
+  chest_cm: number | null;
+  length_cm: number | null;
 };
 
 export type ProductColor = {
@@ -115,6 +117,9 @@ export type SiteSettings = {
 
   nav_catalog_label: string;
   nav_process_label: string;
+  nav_talles_label: string;
+  talles_title: string;
+  talles_subtitle: string;
 
   process_title: string;
   process_subtitle: string;
