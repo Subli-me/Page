@@ -10,11 +10,22 @@ export async function Footer() {
   const infoLinks = settings.footer_info_links ?? [];
   const categoryLinks = settings.footer_categories_links ?? [];
 
+  // Calculate active columns
+  let colsCount = 2; // Brand + Newsletter are always visible
+  if (infoLinks.length > 0) colsCount++;
+  if (categoryLinks.length > 0) colsCount++;
+
+  const gridClass = colsCount === 4
+    ? "grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-4"
+    : colsCount === 3
+    ? "grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-3"
+    : "grid grid-cols-1 gap-12 sm:grid-cols-2";
+
   return (
     <footer className="bg-[#0a0a0a] text-white">
       <div className="mx-auto max-w-7xl px-6 pt-16 pb-10">
         {/* Main grid */}
-        <div className="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-4">
+        <div className={gridClass}>
 
           {/* Col 1 — Brand */}
           <div className="flex flex-col gap-5">
@@ -118,36 +129,40 @@ export async function Footer() {
           </div>
 
           {/* Col 2 — Información */}
-          <div className="flex flex-col gap-4">
-            <h3 className="text-sm font-semibold tracking-wide text-white">Información</h3>
-            <nav className="flex flex-col gap-2.5">
-              {infoLinks.map((item, idx) => (
-                <Link
-                  key={idx}
-                  href={item.href}
-                  className="group flex items-center gap-1 text-sm text-white/60 transition-colors hover:text-white"
-                >
-                  <span>{item.label}</span>
-                </Link>
-              ))}
-            </nav>
-          </div>
+          {infoLinks.length > 0 && (
+            <div className="flex flex-col gap-4">
+              <h3 className="text-sm font-semibold tracking-wide text-white">Información</h3>
+              <nav className="flex flex-col gap-2.5">
+                {infoLinks.map((item, idx) => (
+                  <Link
+                    key={idx}
+                    href={item.href}
+                    className="group flex items-center gap-1 text-sm text-white/60 transition-colors hover:text-white"
+                  >
+                    <span>{item.label}</span>
+                  </Link>
+                ))}
+              </nav>
+            </div>
+          )}
 
           {/* Col 3 — Categorías */}
-          <div className="flex flex-col gap-4">
-            <h3 className="text-sm font-semibold tracking-wide text-white">Categorías</h3>
-            <nav className="flex flex-col gap-2.5">
-              {categoryLinks.map((item, idx) => (
-                <Link
-                  key={idx}
-                  href={item.href}
-                  className="text-sm text-white/60 transition-colors hover:text-white"
-                >
-                  <span>{item.label}</span>
-                </Link>
-              ))}
-            </nav>
-          </div>
+          {categoryLinks.length > 0 && (
+            <div className="flex flex-col gap-4">
+              <h3 className="text-sm font-semibold tracking-wide text-white">Categorías</h3>
+              <nav className="flex flex-col gap-2.5">
+                {categoryLinks.map((item, idx) => (
+                  <Link
+                    key={idx}
+                    href={item.href}
+                    className="text-sm text-white/60 transition-colors hover:text-white"
+                  >
+                    <span>{item.label}</span>
+                  </Link>
+                ))}
+              </nav>
+            </div>
+          )}
 
           {/* Col 4 — Newsletter */}
           <div className="flex flex-col gap-4">
