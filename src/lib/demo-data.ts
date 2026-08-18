@@ -107,21 +107,24 @@ export const DEMO_SETTINGS: SiteSettings = {
   footer_newsletter_title: "Newsletter",
   footer_newsletter_subtitle: "Recibí ofertas exclusivas y novedades directamente en tu email.",
 
-  footer_nav_inicio: "Inicio",
-  footer_nav_productos: "Productos",
-  footer_nav_personalizadas: "Personalizadas",
-  footer_nav_beneficios: "Beneficios",
-  footer_nav_talles: "Talles",
-  footer_nav_politica: "Política de cambio",
-  footer_nav_contacto: "Contacto",
-
-  footer_cat_remeras: "Remeras",
-  footer_cat_buzos: "Buzos",
-  footer_cat_medias: "Medias",
-  footer_cat_gorras: "Gorras",
-  footer_cat_totebag: "Tote Bag",
-  footer_cat_combos: "Combos",
-  footer_cat_bermudas: "Bermudas",
+  footer_info_links: [
+    { label: "Inicio", href: "/" },
+    { label: "Productos", href: "/#productos" },
+    { label: "Personalizadas", href: "/pedido" },
+    { label: "Beneficios", href: "/#beneficios" },
+    { label: "Talles", href: "/#talles" },
+    { label: "Política de cambio", href: "/#politica" },
+    { label: "Contacto", href: "/#contacto" }
+  ],
+  footer_categories_links: [
+    { label: "Remeras", href: "/#remeras" },
+    { label: "Buzos", href: "/#buzos" },
+    { label: "Medias", href: "/#medias" },
+    { label: "Gorras", href: "/#gorras" },
+    { label: "Tote Bag", href: "/#totebag" },
+    { label: "Combos", href: "/#combos" },
+    { label: "Bermudas", href: "/#bermudas" }
+  ],
 
   contact_email: null,
   contact_phone: null,

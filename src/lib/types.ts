@@ -104,23 +104,9 @@ export type SiteSettings = {
   footer_newsletter_title: string;
   footer_newsletter_subtitle: string;
 
-  // Footer nav labels (Información column)
-  footer_nav_inicio: string;
-  footer_nav_productos: string;
-  footer_nav_personalizadas: string;
-  footer_nav_beneficios: string;
-  footer_nav_talles: string;
-  footer_nav_politica: string;
-  footer_nav_contacto: string;
-
-  // Footer category labels (Categorías column)
-  footer_cat_remeras: string;
-  footer_cat_buzos: string;
-  footer_cat_medias: string;
-  footer_cat_gorras: string;
-  footer_cat_totebag: string;
-  footer_cat_combos: string;
-  footer_cat_bermudas: string;
+  // Footer dynamic lists
+  footer_info_links: { label: string; href: string }[];
+  footer_categories_links: { label: string; href: string }[];
 
   contact_email: string | null;
   contact_phone: string | null;

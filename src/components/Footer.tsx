@@ -7,25 +7,8 @@ import { FooterNewsletter } from "./FooterNewsletter";
 export async function Footer() {
   const settings = await getSiteSettings();
 
-  const infoLinks = [
-    { field: "footer_nav_inicio" as const, href: "/", label: settings.footer_nav_inicio },
-    { field: "footer_nav_productos" as const, href: "/#productos", label: settings.footer_nav_productos },
-    { field: "footer_nav_personalizadas" as const, href: "/pedido", label: settings.footer_nav_personalizadas },
-    { field: "footer_nav_beneficios" as const, href: "/#beneficios", label: settings.footer_nav_beneficios },
-    { field: "footer_nav_talles" as const, href: "/#talles", label: settings.footer_nav_talles },
-    { field: "footer_nav_politica" as const, href: "/#politica", label: settings.footer_nav_politica },
-    { field: "footer_nav_contacto" as const, href: "/#contacto", label: settings.footer_nav_contacto },
-  ];
-
-  const categoryLinks = [
-    { field: "footer_cat_remeras" as const, href: "/#remeras", label: settings.footer_cat_remeras },
-    { field: "footer_cat_buzos" as const, href: "/#buzos", label: settings.footer_cat_buzos },
-    { field: "footer_cat_medias" as const, href: "/#medias", label: settings.footer_cat_medias },
-    { field: "footer_cat_gorras" as const, href: "/#gorras", label: settings.footer_cat_gorras },
-    { field: "footer_cat_totebag" as const, href: "/#totebag", label: settings.footer_cat_totebag },
-    { field: "footer_cat_combos" as const, href: "/#combos", label: settings.footer_cat_combos },
-    { field: "footer_cat_bermudas" as const, href: "/#bermudas", label: settings.footer_cat_bermudas },
-  ];
+  const infoLinks = settings.footer_info_links ?? [];
+  const categoryLinks = settings.footer_categories_links ?? [];
 
   return (
     <footer className="bg-[#0a0a0a] text-white">
@@ -128,13 +111,13 @@ export async function Footer() {
           <div className="flex flex-col gap-4">
             <h3 className="text-sm font-semibold tracking-wide text-white">Información</h3>
             <nav className="flex flex-col gap-2.5">
-              {infoLinks.map(({ field, href, label }) => (
+              {infoLinks.map((item, idx) => (
                 <Link
-                  key={field}
-                  href={href}
+                  key={idx}
+                  href={item.href}
                   className="group flex items-center gap-1 text-sm text-white/60 transition-colors hover:text-white"
                 >
-                  <EditableText field={field} value={label} as="span" />
+                  <span>{item.label}</span>
                 </Link>
               ))}
             </nav>
@@ -144,13 +127,13 @@ export async function Footer() {
           <div className="flex flex-col gap-4">
             <h3 className="text-sm font-semibold tracking-wide text-white">Categorías</h3>
             <nav className="flex flex-col gap-2.5">
-              {categoryLinks.map(({ field, href, label }) => (
+              {categoryLinks.map((item, idx) => (
                 <Link
-                  key={field}
-                  href={href}
+                  key={idx}
+                  href={item.href}
                   className="text-sm text-white/60 transition-colors hover:text-white"
                 >
-                  <EditableText field={field} value={label} as="span" />
+                  <span>{item.label}</span>
                 </Link>
               ))}
             </nav>

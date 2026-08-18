@@ -146,25 +146,119 @@ export function SiteSettingsAdmin({ initial }: { initial: SiteSettings }) {
         </div>
 
         <h3 className="mt-8 mb-3 text-sm font-semibold text-white/80">Enlaces de la Columna "Información"</h3>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <EditableText label="Link: Inicio" value={settings.footer_nav_inicio} onSave={(v) => save("footer_nav_inicio", v)} />
-          <EditableText label="Link: Productos" value={settings.footer_nav_productos} onSave={(v) => save("footer_nav_productos", v)} />
-          <EditableText label="Link: Personalizadas" value={settings.footer_nav_personalizadas} onSave={(v) => save("footer_nav_personalizadas", v)} />
-          <EditableText label="Link: Beneficios" value={settings.footer_nav_beneficios} onSave={(v) => save("footer_nav_beneficios", v)} />
-          <EditableText label="Link: Talles" value={settings.footer_nav_talles} onSave={(v) => save("footer_nav_talles", v)} />
-          <EditableText label="Link: Política" value={settings.footer_nav_politica} onSave={(v) => save("footer_nav_politica", v)} />
-          <EditableText label="Link: Contacto" value={settings.footer_nav_contacto} onSave={(v) => save("footer_nav_contacto", v)} />
+        <div className="space-y-3">
+          {(settings.footer_info_links ?? []).map((item, idx) => (
+            <div key={idx} className="flex gap-4 items-end bg-black/10 p-3 rounded-lg border border-white/5">
+              <div className="flex-1">
+                <label className="text-xs text-white/50 block mb-1">Nombre</label>
+                <input
+                  type="text"
+                  value={item.label}
+                  onChange={(e) => {
+                    const newList = [...(settings.footer_info_links ?? [])];
+                    newList[idx] = { ...item, label: e.target.value };
+                    setSettings((prev) => ({ ...prev, footer_info_links: newList }));
+                  }}
+                  onBlur={() => save("footer_info_links", settings.footer_info_links)}
+                  className="input"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="text-xs text-white/50 block mb-1">Enlace / Ruta (ej: /pedido o /#talles)</label>
+                <input
+                  type="text"
+                  value={item.href}
+                  onChange={(e) => {
+                    const newList = [...(settings.footer_info_links ?? [])];
+                    newList[idx] = { ...item, href: e.target.value };
+                    setSettings((prev) => ({ ...prev, footer_info_links: newList }));
+                  }}
+                  onBlur={() => save("footer_info_links", settings.footer_info_links)}
+                  className="input"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={async () => {
+                  const newList = (settings.footer_info_links ?? []).filter((_, i) => i !== idx);
+                  setSettings((prev) => ({ ...prev, footer_info_links: newList }));
+                  await save("footer_info_links", newList);
+                }}
+                className="bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 px-3.5 py-2.5 rounded text-sm transition-colors cursor-pointer"
+              >
+                Eliminar
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={async () => {
+              const newList = [...(settings.footer_info_links ?? []), { label: "Nuevo Link", href: "/" }];
+              setSettings((prev) => ({ ...prev, footer_info_links: newList }));
+              await save("footer_info_links", newList);
+            }}
+            className="bg-[var(--accent)] hover:opacity-90 px-4 py-2 rounded text-sm text-white font-medium cursor-pointer"
+          >
+            + Agregar Link de Información
+          </button>
         </div>
 
         <h3 className="mt-8 mb-3 text-sm font-semibold text-white/80">Enlaces de la Columna "Categorías"</h3>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <EditableText label="Categoría: Remeras" value={settings.footer_cat_remeras} onSave={(v) => save("footer_cat_remeras", v)} />
-          <EditableText label="Categoría: Buzos" value={settings.footer_cat_buzos} onSave={(v) => save("footer_cat_buzos", v)} />
-          <EditableText label="Categoría: Medias" value={settings.footer_cat_medias} onSave={(v) => save("footer_cat_medias", v)} />
-          <EditableText label="Categoría: Gorras" value={settings.footer_cat_gorras} onSave={(v) => save("footer_cat_gorras", v)} />
-          <EditableText label="Categoría: Tote Bag" value={settings.footer_cat_totebag} onSave={(v) => save("footer_cat_totebag", v)} />
-          <EditableText label="Categoría: Combos" value={settings.footer_cat_combos} onSave={(v) => save("footer_cat_combos", v)} />
-          <EditableText label="Categoría: Bermudas" value={settings.footer_cat_bermudas} onSave={(v) => save("footer_cat_bermudas", v)} />
+        <div className="space-y-3">
+          {(settings.footer_categories_links ?? []).map((item, idx) => (
+            <div key={idx} className="flex gap-4 items-end bg-black/10 p-3 rounded-lg border border-white/5">
+              <div className="flex-1">
+                <label className="text-xs text-white/50 block mb-1">Nombre</label>
+                <input
+                  type="text"
+                  value={item.label}
+                  onChange={(e) => {
+                    const newList = [...(settings.footer_categories_links ?? [])];
+                    newList[idx] = { ...item, label: e.target.value };
+                    setSettings((prev) => ({ ...prev, footer_categories_links: newList }));
+                  }}
+                  onBlur={() => save("footer_categories_links", settings.footer_categories_links)}
+                  className="input"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="text-xs text-white/50 block mb-1">Enlace / Ruta</label>
+                <input
+                  type="text"
+                  value={item.href}
+                  onChange={(e) => {
+                    const newList = [...(settings.footer_categories_links ?? [])];
+                    newList[idx] = { ...item, href: e.target.value };
+                    setSettings((prev) => ({ ...prev, footer_categories_links: newList }));
+                  }}
+                  onBlur={() => save("footer_categories_links", settings.footer_categories_links)}
+                  className="input"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={async () => {
+                  const newList = (settings.footer_categories_links ?? []).filter((_, i) => i !== idx);
+                  setSettings((prev) => ({ ...prev, footer_categories_links: newList }));
+                  await save("footer_categories_links", newList);
+                }}
+                className="bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 px-3.5 py-2.5 rounded text-sm transition-colors cursor-pointer"
+              >
+                Eliminar
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={async () => {
+              const newList = [...(settings.footer_categories_links ?? []), { label: "Nueva Categoría", href: "/" }];
+              setSettings((prev) => ({ ...prev, footer_categories_links: newList }));
+              await save("footer_categories_links", newList);
+            }}
+            className="bg-[var(--accent)] hover:opacity-90 px-4 py-2 rounded text-sm text-white font-medium cursor-pointer"
+          >
+            + Agregar Categoría
+          </button>
         </div>
       </Section>
 
