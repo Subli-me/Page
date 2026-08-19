@@ -671,28 +671,53 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
                     </select>
                   </div>
 
-                  {/* Selector de Categorías (checkboxes) */}
+                  {/* Selector y chips de Categorías */}
                   {categories.length > 0 && (
-                    <div className="mt-2 space-y-1 max-h-32 overflow-y-auto">
-                      {categories.map((cat) => (
-                        <label
-                          key={cat.id}
-                          className="flex items-center gap-1.5 text-[11px] text-ink-soft cursor-pointer hover:text-ink"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={d.category_ids.includes(cat.id)}
-                            onChange={(e) => {
-                              const newIds = e.target.checked
-                                ? [...d.category_ids, cat.id]
-                                : d.category_ids.filter((id) => id !== cat.id);
-                              assignCategoriesToDesign(d.id, newIds);
-                            }}
-                            className="h-3 w-3 accent-accent"
-                          />
-                          {cat.name}
-                        </label>
-                      ))}
+                    <div className="mt-2 space-y-2">
+                      {/* Chips de categorías asignadas */}
+                      {d.category_ids.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {d.category_ids.map((catId) => {
+                            const cat = categories.find((c) => c.id === catId);
+                            return cat ? (
+                              <button
+                                key={catId}
+                                onClick={() => {
+                                  const newIds = d.category_ids.filter((id) => id !== catId);
+                                  assignCategoriesToDesign(d.id, newIds);
+                                }}
+                                className="inline-flex items-center gap-1 rounded-full bg-accent/20 px-2 py-0.5 text-[10px] text-accent hover:bg-accent/40 transition-colors"
+                                title="Click para quitar"
+                              >
+                                {cat.name}
+                                <X size={12} />
+                              </button>
+                            ) : null;
+                          })}
+                        </div>
+                      )}
+
+                      {/* Selector para agregar categorías */}
+                      <select
+                        value=""
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            const newIds = [...d.category_ids, e.target.value];
+                            assignCategoriesToDesign(d.id, newIds);
+                            e.target.value = "";
+                          }
+                        }}
+                        className="w-full rounded-lg border border-line bg-paper px-2 py-1 text-[11px] text-ink focus:border-ink focus:outline-none"
+                      >
+                        <option value="">+ Agregar categoría</option>
+                        {categories
+                          .filter((cat) => !d.category_ids.includes(cat.id))
+                          .map((cat) => (
+                            <option key={cat.id} value={cat.id}>
+                              {cat.name}
+                            </option>
+                          ))}
+                      </select>
                     </div>
                   )}
 
