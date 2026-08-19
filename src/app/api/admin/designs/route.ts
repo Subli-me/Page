@@ -7,7 +7,6 @@ const itemSchema = z.object({
   name: z.string().min(1),
   imageUrl: z.string().url(),
   imagePublicId: z.string().min(1),
-  category: z.string().optional().nullable(),
 });
 
 const schema = z.union([
@@ -35,28 +34,37 @@ export async function POST(req: Request) {
       name: it.name,
       image_url: it.imageUrl,
       image_public_id: it.imagePublicId,
-      category: it.category ?? null,
     }));
     const { data, error } = await service
       .from("design_catalog")
       .insert(rows)
       .select();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ designs: data });
+    const designsWithCategories = data?.map((d) => ({
+      ...d,
+      color: null,
+      category_ids: [],
+    })) || [];
+    return NextResponse.json({ designs: designsWithCategories });
   } else {
-    const { name, imageUrl, imagePublicId, category } = parsed.data;
+    const { name, imageUrl, imagePublicId } = parsed.data;
     const { data, error } = await service
       .from("design_catalog")
       .insert({
         name,
         image_url: imageUrl,
         image_public_id: imagePublicId,
-        category: category ?? null,
       })
       .select()
       .single();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ design: data });
+    return NextResponse.json({
+      design: {
+        ...data,
+        color: null,
+        category_ids: [],
+      },
+    });
   }
 }

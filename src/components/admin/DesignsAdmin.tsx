@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import Image from "next/image";
 import {
   Trash2,
@@ -8,15 +8,16 @@ import {
   Loader2,
   Check,
   Plus,
-  Layers,
   Search,
   CheckSquare,
   Square,
   X,
+  Edit2,
+  GripVertical,
+  Palette,
 } from "lucide-react";
 import clsx from "clsx";
-import type { DesignCatalogItem } from "@/lib/types";
-
+import type { DesignCatalogItem, DesignCategory } from "@/lib/types";
 import { convertToWebP } from "@/lib/imageUtils";
 
 type StagedDesign = {
@@ -26,6 +27,25 @@ type StagedDesign = {
   publicId: string;
   status: "uploading" | "ready" | "error";
 };
+
+type DraggedDesign = {
+  id: string;
+  name: string;
+};
+
+const COLORS = [
+  { name: "Rojo", value: "red" },
+  { name: "Azul", value: "blue" },
+  { name: "Verde", value: "green" },
+  { name: "Amarillo", value: "yellow" },
+  { name: "Negro", value: "black" },
+  { name: "Blanco", value: "white" },
+  { name: "Gris", value: "gray" },
+  { name: "Púrpura", value: "purple" },
+  { name: "Rosa", value: "pink" },
+  { name: "Naranja", value: "orange" },
+  { name: "Multicolor", value: "multicolor" },
+];
 
 function formatFileName(fileName: string): string {
   const withoutExt = fileName.replace(/\.[^/.]+$/, "");
@@ -38,16 +58,101 @@ function formatFileName(fileName: string): string {
 
 export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
   const [designs, setDesigns] = useState<DesignCatalogItem[]>(initial);
+  const [categories, setCategories] = useState<DesignCategory[]>([]);
   const [staged, setStaged] = useState<StagedDesign[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [savingAll, setSavingAll] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [colorFilter, setColorFilter] = useState<string>("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("");
+  const [draggedDesign, setDraggedDesign] = useState<DraggedDesign | null>(null);
+  const [editingCategory, setEditingCategory] = useState<string | null>(null);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [loadingCategories, setLoadingCategories] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Cargar categorías
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  async function loadCategories() {
+    try {
+      const res = await fetch("/api/admin/design-categories");
+      const data = await res.json();
+      setCategories(data);
+    } catch (err) {
+      console.error("Error cargando categorías:", err);
+    } finally {
+      setLoadingCategories(false);
+    }
+  }
+
+  async function createCategory() {
+    if (!newCategoryName.trim()) return;
+    try {
+      const res = await fetch("/api/admin/design-categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newCategoryName.trim(),
+          sort_order: categories.length,
+        }),
+      });
+      const cat = await res.json();
+      setCategories((prev) => [...prev, cat]);
+      setNewCategoryName("");
+    } catch (err) {
+      console.error("Error creando categoría:", err);
+    }
+  }
+
+  async function updateCategory(id: string, name: string) {
+    try {
+      await fetch(`/api/admin/design-categories/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      setCategories((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, name } : c))
+      );
+      setEditingCategory(null);
+    } catch (err) {
+      console.error("Error actualizando categoría:", err);
+    }
+  }
+
+  async function deleteCategory(id: string) {
+    if (!confirm("¿Eliminar esta categoría? Los diseños no se eliminarán.")) return;
+    try {
+      await fetch(`/api/admin/design-categories/${id}`, { method: "DELETE" });
+      setCategories((prev) => prev.filter((c) => c.id !== id));
+    } catch (err) {
+      console.error("Error eliminando categoría:", err);
+    }
+  }
+
+  async function assignCategoriesToDesign(designId: string, categoryIds: string[]) {
+    try {
+      await fetch(`/api/admin/designs/${designId}/categories`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ category_ids: categoryIds }),
+      });
+      setDesigns((prev) =>
+        prev.map((d) =>
+          d.id === designId ? { ...d, category_ids: categoryIds } : d
+        )
+      );
+    } catch (err) {
+      console.error("Error asignando categorías:", err);
+    }
+  }
 
   async function uploadFile(file: File, tempId: string) {
     try {
-      // Convertir y comprimir la imagen a WebP antes de subir
       const optimizedFile = await convertToWebP(file, { maxDimension: 2400, quality: 0.85 }).catch(() => file);
 
       const sigRes = await fetch("/api/upload-signature", { method: "POST" });
@@ -144,35 +249,13 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
     });
   }
 
-  // Extraer las categorías únicas actuales de la lista de diseños
-  const existingCategories = Array.from(
-    new Set(designs.map((d) => d.category).filter((c): c is string => Boolean(c)))
-  );
-
-  async function updateCategory(id: string, category: string | null) {
-    setDesigns((prev) => prev.map((d) => (d.id === id ? { ...d, category } : d)));
+  async function updateColor(id: string, color: string | null) {
+    setDesigns((prev) => prev.map((d) => (d.id === id ? { ...d, color } : d)));
     await fetch(`/api/admin/designs/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ category }),
+      body: JSON.stringify({ color }),
     });
-  }
-
-  async function applyBatchCategory(category: string | null) {
-    if (selectedIds.length === 0) return;
-    const idsToUpdate = [...selectedIds];
-    setDesigns((prev) =>
-      prev.map((d) => (idsToUpdate.includes(d.id) ? { ...d, category } : d))
-    );
-    await Promise.all(
-      idsToUpdate.map((id) =>
-        fetch(`/api/admin/designs/${id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ category }),
-        })
-      )
-    );
   }
 
   async function removeDesign(id: string) {
@@ -194,15 +277,15 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
     );
   }
 
-  const [categoryFilter, setCategoryFilter] = useState<string>("todas");
-
+  // Filtros
   const filteredDesigns = designs.filter((d) => {
     const matchesSearch = d.name.toLowerCase().includes(search.toLowerCase());
     if (!matchesSearch) return false;
 
-    if (categoryFilter === "todas") return true;
-    if (categoryFilter === "sin_clasificar") return !d.category;
-    return d.category === categoryFilter;
+    if (colorFilter && d.color !== colorFilter) return false;
+    if (categoryFilter && !d.category_ids.includes(categoryFilter)) return false;
+
+    return true;
   });
 
   const readyCount = staged.filter((s) => s.status === "ready").length;
@@ -210,6 +293,101 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
 
   return (
     <div className="space-y-12">
+      {/* Gestión de Categorías Temáticas */}
+      <section className="rounded-2xl border border-line bg-panel p-6 sm:p-8">
+        <h2 className="font-display text-2xl italic mb-4">Categorías temáticas</h2>
+        <p className="text-sm text-ink-soft mb-6">
+          Crea categorías como Música, Anime, Series, etc. Luego asigna los diseños a las categorías que correspondan.
+        </p>
+
+        {loadingCategories ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="animate-spin text-accent" size={24} />
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {/* Nueva categoría */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && createCategory()}
+                placeholder="Nombre de la nueva categoría (ej: Música, Anime...)"
+                className="input flex-1"
+              />
+              <button
+                onClick={createCategory}
+                disabled={!newCategoryName.trim()}
+                className="inline-flex items-center gap-2 rounded-full bg-accent px-6 py-2.5 text-sm font-medium text-paper hover:bg-ink disabled:opacity-30"
+              >
+                <Plus size={16} /> Crear
+              </button>
+            </div>
+
+            {/* Lista de categorías */}
+            {categories.length === 0 ? (
+              <div className="rounded-lg border border-line/50 p-6 text-center text-ink-soft text-sm">
+                Todavía no creaste ninguna categoría. Crea una arriba para empezar.
+              </div>
+            ) : (
+              <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3">
+                {categories.map((cat) => (
+                  <div
+                    key={cat.id}
+                    className="flex items-center justify-between rounded-lg border border-line bg-paper/40 px-4 py-3"
+                  >
+                    {editingCategory === cat.id ? (
+                      <input
+                        type="text"
+                        defaultValue={cat.name}
+                        onBlur={(e) => {
+                          if (e.target.value.trim() && e.target.value !== cat.name) {
+                            updateCategory(cat.id, e.target.value.trim());
+                          } else {
+                            setEditingCategory(null);
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.currentTarget.blur();
+                          }
+                        }}
+                        autoFocus
+                        className="input text-sm flex-1"
+                      />
+                    ) : (
+                      <span className="text-sm font-medium">
+                        {cat.name}{" "}
+                        <span className="text-ink-soft">
+                          ({designs.filter((d) => d.category_ids.includes(cat.id)).length})
+                        </span>
+                      </span>
+                    )}
+                    <div className="flex gap-1 ml-2">
+                      <button
+                        onClick={() => setEditingCategory(cat.id)}
+                        className="rounded p-1 text-ink-soft hover:bg-ink/10 hover:text-ink"
+                        title="Editar"
+                      >
+                        <Edit2 size={14} />
+                      </button>
+                      <button
+                        onClick={() => deleteCategory(cat.id)}
+                        className="rounded p-1 text-ink-soft hover:bg-accent-soft hover:text-accent"
+                        title="Eliminar"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </section>
+
       {/* Sección Carga Masiva */}
       <section className="rounded-2xl border border-line bg-panel p-6 sm:p-8">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -290,7 +468,7 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
           />
         </div>
 
-        {/* Cola de subida / Diseños listos para guardar */}
+        {/* Cola de subida */}
         {staged.length > 0 && (
           <div className="mt-8 space-y-4">
             <div className="flex items-center justify-between border-b border-line pb-3">
@@ -358,69 +536,50 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
         )}
       </section>
 
-      {/* Catálogo existente con búsqueda y selección múltiple */}
+      {/* Catálogo Existente */}
       <section className="space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="font-display text-2xl italic">
+            Diseños cargados ({filteredDesigns.length})
+          </h2>
+
           <div className="flex flex-wrap items-center gap-3">
-            <h2 className="font-display text-2xl italic">
-              Diseños cargados ({filteredDesigns.length})
-            </h2>
-            {selectedIds.length > 0 && (
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={removeSelected}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-accent/15 px-3 py-1 text-xs font-medium text-accent hover:bg-accent hover:text-paper transition-colors"
-                >
-                  <Trash2 size={13} /> Eliminar {selectedIds.length}
-                </button>
+            {/* Filtro por Color */}
+            <div className="flex items-center gap-1.5 rounded-lg border border-line bg-panel px-2.5 py-1 text-xs">
+              <Palette size={14} className="text-ink-soft" />
+              <select
+                value={colorFilter}
+                onChange={(e) => setColorFilter(e.target.value)}
+                className="bg-transparent font-medium text-ink focus:outline-none cursor-pointer"
+              >
+                <option value="">Todos los colores</option>
+                {COLORS.map((c) => (
+                  <option key={c.value} value={c.value}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Filtro por Categoría */}
+            {categories.length > 0 && (
+              <div className="flex items-center gap-1.5 rounded-lg border border-line bg-panel px-2.5 py-1 text-xs">
+                <span className="text-ink-soft">Categoría:</span>
                 <select
-                  onChange={(e) => {
-                    if (e.target.value === "__NEW__") {
-                      const newCat = prompt("Ingresá el nombre de la nueva categoría (ej: Música, Anime, Series):");
-                      if (newCat && newCat.trim()) {
-                        applyBatchCategory(newCat.trim());
-                      }
-                    } else {
-                      applyBatchCategory(e.target.value || null);
-                    }
-                    e.target.value = "";
-                  }}
-                  className="rounded-full border border-line bg-panel px-3 py-1 text-xs font-medium text-ink hover:border-ink cursor-pointer"
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="bg-transparent font-medium text-ink focus:outline-none cursor-pointer"
                 >
-                  <option value="">Categoría a selección...</option>
-                  <option value="">Sin clasificar</option>
-                  {existingCategories.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
+                  <option value="">Todas las categorías</option>
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
                     </option>
                   ))}
-                  <option value="__NEW__">+ Crear nueva categoría...</option>
+                  <option value="__UNCATEGORIZED__">Sin categoría</option>
                 </select>
               </div>
             )}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Filtro por Categoría */}
-            <div className="flex items-center gap-1.5 rounded-lg border border-line bg-panel px-2.5 py-1 text-xs">
-              <span className="text-ink-soft">Categoría:</span>
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="bg-transparent font-medium text-ink focus:outline-none cursor-pointer capitalize"
-              >
-                <option value="todas">Todas ({designs.length})</option>
-                {existingCategories.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat} ({designs.filter((d) => d.category === cat).length})
-                  </option>
-                ))}
-                <option value="sin_clasificar">
-                  Sin clasificar ({designs.filter((d) => !d.category).length})
-                </option>
-              </select>
-            </div>
 
             {/* Buscador */}
             <div className="relative">
@@ -433,28 +592,14 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
               />
             </div>
 
-            {/* Seleccionar todos */}
-            {designs.length > 0 && (
+            {/* Acciones de Selección */}
+            {selectedIds.length > 0 && (
               <button
                 type="button"
-                onClick={() => {
-                  if (selectedIds.length === filteredDesigns.length) {
-                    setSelectedIds([]);
-                  } else {
-                    setSelectedIds(filteredDesigns.map((d) => d.id));
-                  }
-                }}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-panel px-3 py-2 text-xs hover:border-ink"
+                onClick={removeSelected}
+                className="inline-flex items-center gap-1.5 rounded-full bg-accent/15 px-3 py-1 text-xs font-medium text-accent hover:bg-accent hover:text-paper transition-colors"
               >
-                {selectedIds.length === filteredDesigns.length && filteredDesigns.length > 0 ? (
-                  <>
-                    <CheckSquare size={14} className="text-accent" /> Deseleccionar
-                  </>
-                ) : (
-                  <>
-                    <Square size={14} /> Seleccionar todo
-                  </>
-                )}
+                <Trash2 size={13} /> Eliminar {selectedIds.length}
               </button>
             )}
           </div>
@@ -475,8 +620,11 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
               return (
                 <div
                   key={d.id}
+                  draggable
+                  onDragStart={() => setDraggedDesign({ id: d.id, name: d.name })}
+                  onDragEnd={() => setDraggedDesign(null)}
                   className={clsx(
-                    "group relative flex flex-col justify-between rounded-xl border p-2.5 transition-all",
+                    "group relative flex flex-col justify-between rounded-xl border p-2.5 transition-all cursor-move",
                     isSelected
                       ? "border-accent bg-accent-soft/20 ring-2 ring-accent"
                       : "border-line bg-panel hover:border-ink"
@@ -507,31 +655,46 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
                     {d.name}
                   </p>
 
-                  {/* Selector de Categoría personalizada */}
+                  {/* Selector de Color */}
                   <div className="mt-1.5">
                     <select
-                      value={d.category ?? ""}
-                      onChange={(e) => {
-                        if (e.target.value === "__NEW__") {
-                          const newCat = prompt("Ingresá el nombre de la nueva categoría (ej: Música, Anime, Series):");
-                          if (newCat && newCat.trim()) {
-                            updateCategory(d.id, newCat.trim());
-                          }
-                        } else {
-                          updateCategory(d.id, e.target.value || null);
-                        }
-                      }}
-                      className="w-full rounded-lg border border-line bg-paper px-2 py-1 text-[11px] text-ink focus:border-ink focus:outline-none capitalize"
+                      value={d.color ?? ""}
+                      onChange={(e) => updateColor(d.id, e.target.value || null)}
+                      className="w-full rounded-lg border border-line bg-paper px-2 py-1 text-[11px] text-ink focus:border-ink focus:outline-none"
                     >
-                      <option value="">Sin clasificar</option>
-                      {existingCategories.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
+                      <option value="">Sin color</option>
+                      {COLORS.map((c) => (
+                        <option key={c.value} value={c.value}>
+                          {c.name}
                         </option>
                       ))}
-                      <option value="__NEW__">+ Nueva categoría...</option>
                     </select>
                   </div>
+
+                  {/* Selector de Categorías (checkboxes) */}
+                  {categories.length > 0 && (
+                    <div className="mt-2 space-y-1 max-h-32 overflow-y-auto">
+                      {categories.map((cat) => (
+                        <label
+                          key={cat.id}
+                          className="flex items-center gap-1.5 text-[11px] text-ink-soft cursor-pointer hover:text-ink"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={d.category_ids.includes(cat.id)}
+                            onChange={(e) => {
+                              const newIds = e.target.checked
+                                ? [...d.category_ids, cat.id]
+                                : d.category_ids.filter((id) => id !== cat.id);
+                              assignCategoriesToDesign(d.id, newIds);
+                            }}
+                            className="h-3 w-3 accent-accent"
+                          />
+                          {cat.name}
+                        </label>
+                      ))}
+                    </div>
+                  )}
 
                   <div className="mt-2 flex items-center justify-between border-t border-line/60 pt-2">
                     <label className="flex items-center gap-1.5 text-[11px] text-ink-soft">

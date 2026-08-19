@@ -56,12 +56,20 @@ export type ProductMockup = {
   overlay_h: number;
 };
 
+export type DesignCategory = {
+  id: string;
+  name: string;
+  description: string | null;
+  sort_order: number;
+};
+
 export type DesignCatalogItem = {
   id: string;
   name: string;
   image_url: string;
   image_public_id: string;
-  category: string | null;
+  color: string | null;
+  category_ids: string[];
   active: boolean;
   sort_order: number;
 };
