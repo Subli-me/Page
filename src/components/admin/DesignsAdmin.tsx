@@ -17,6 +17,8 @@ import {
 import clsx from "clsx";
 import type { DesignCatalogItem } from "@/lib/types";
 
+import { convertToWebP } from "@/lib/imageUtils";
+
 type StagedDesign = {
   id: string;
   name: string;
@@ -45,11 +47,14 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
 
   async function uploadFile(file: File, tempId: string) {
     try {
+      // Convertir y comprimir la imagen a WebP antes de subir
+      const optimizedFile = await convertToWebP(file, { maxDimension: 2400, quality: 0.85 }).catch(() => file);
+
       const sigRes = await fetch("/api/upload-signature", { method: "POST" });
       const sig = await sigRes.json();
 
       const form = new FormData();
-      form.append("file", file);
+      form.append("file", optimizedFile);
       form.append("api_key", sig.apiKey);
       form.append("timestamp", sig.timestamp);
       form.append("signature", sig.signature);
