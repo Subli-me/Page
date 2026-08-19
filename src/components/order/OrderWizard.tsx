@@ -13,6 +13,7 @@ import { PreviewStage } from "./PreviewStage";
 import { type DesignTransform } from "./DesignAdjuster";
 import { ZoneSelector } from "./ZoneSelector";
 import { SizeGuideModal } from "./SizeGuideModal";
+import { MediaDisplay } from "@/components/MediaDisplay";
 
 const STEPS = ["Prenda", "Talle y color", "Diseño", "Tus datos"] as const;
 
@@ -202,7 +203,7 @@ export function OrderWizard({
                 >
                   <div className="relative aspect-[4/5] bg-accent-soft overflow-hidden">
                     {p.image_url ? (
-                      <Image src={p.image_url} alt={p.name} fill className="object-cover transition-transform duration-300 group-hover:scale-105" />
+                      <MediaDisplay src={p.image_url} alt={p.name} fill className="object-cover transition-transform duration-300 group-hover:scale-105" />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center text-ink-soft">
                         <Shirt size={36} className="text-accent" />

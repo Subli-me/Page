@@ -5,6 +5,7 @@ import Image from "next/image";
 import clsx from "clsx";
 import { Ruler, Shirt } from "lucide-react";
 import type { Product, ProductSize } from "@/lib/types";
+import { MediaDisplay } from "./MediaDisplay";
 
 export function SizeChartSection({
   products,
@@ -56,7 +57,7 @@ export function SizeChartSection({
       <div className="grid gap-6 sm:grid-cols-[0.85fr_1.15fr] sm:items-start">
         <div className="relative aspect-4/5 overflow-hidden rounded-2xl border border-line bg-panel">
           {activeProduct?.image_url ? (
-            <Image
+            <MediaDisplay
               src={activeProduct.image_url}
               alt={activeProduct.name}
               fill

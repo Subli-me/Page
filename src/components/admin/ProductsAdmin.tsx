@@ -7,6 +7,7 @@ import clsx from "clsx";
 import type { PrintZone, Product, ProductColor, ProductSize } from "@/lib/types";
 import { EditableNumber } from "./EditableNumber";
 import { ImageUploader } from "@/components/order/ImageUploader";
+import { MediaDisplay } from "@/components/MediaDisplay";
 
 export function ProductsAdmin({
   initialProducts,
@@ -382,10 +383,10 @@ function ProductRow({
               type="button"
               onClick={onToggleExpand}
               className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-line bg-accent-soft hover:opacity-80 transition-opacity"
-              title="Cambiar foto / detalles"
+              title="Cambiar foto/video / detalles"
             >
               {product.image_url ? (
-                <Image src={product.image_url} alt={product.name} fill className="object-cover" />
+                <MediaDisplay src={product.image_url} alt={product.name} fill className="object-cover" />
               ) : (
                 <div className="flex h-full w-full items-center justify-center text-ink-soft">
                   <Shirt size={18} />
@@ -430,12 +431,13 @@ function ProductRow({
               <div className="grid gap-6 sm:grid-cols-[220px_1fr] items-start rounded-xl border border-line bg-panel p-4">
                 <div>
                   <p className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-soft">
-                    Foto de portada
+                    Foto / Video de portada
                   </p>
                   <div className="w-full">
                     <ImageUploader
                       value={product.image_url ? { url: product.image_url, publicId: "" } : null}
                       onChange={(img) => onSaveField(product.id, "image_url", img?.url ?? null)}
+                      label="Arrastrá o elegí foto/video"
                     />
                   </div>
                 </div>

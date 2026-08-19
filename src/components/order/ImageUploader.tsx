@@ -1,18 +1,22 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import Image from "next/image";
 import { Upload, X, Loader2 } from "lucide-react";
 import clsx from "clsx";
+import { MediaDisplay, isVideoUrl } from "../MediaDisplay";
 
 export type UploadedImage = { url: string; publicId: string };
 
 export function ImageUploader({
   value,
   onChange,
+  accept = "image/*,video/*",
+  label = "Arrastrá tu imagen o video, o hacé click",
 }: {
   value: UploadedImage | null;
   onChange: (img: UploadedImage | null) => void;
+  accept?: string;
+  label?: string;
 }) {
   const [isUploading, setIsUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -21,8 +25,11 @@ export function ImageUploader({
 
   const upload = useCallback(async (file: File) => {
     setError(null);
-    if (!file.type.startsWith("image/")) {
-      setError("Subí un archivo de imagen (JPG, PNG, etc).");
+    const isImage = file.type.startsWith("image/");
+    const isVideo = file.type.startsWith("video/");
+
+    if (!isImage && !isVideo) {
+      setError("Subí un archivo válido de imagen o video (JPG, PNG, MP4, WEBM, etc).");
       return;
     }
     setIsUploading(true);
@@ -37,15 +44,17 @@ export function ImageUploader({
       form.append("signature", sig.signature);
       form.append("folder", sig.folder);
 
+      const resourceType = isVideo ? "video" : "auto";
+
       const res = await fetch(
-        `https://api.cloudinary.com/v1_1/${sig.cloudName}/image/upload`,
+        `https://api.cloudinary.com/v1_1/${sig.cloudName}/${resourceType}/upload`,
         { method: "POST", body: form }
       );
       if (!res.ok) throw new Error("Falló la subida");
       const json = await res.json();
       onChange({ url: json.secure_url, publicId: json.public_id });
     } catch {
-      setError("No se pudo subir la imagen. Probá de nuevo.");
+      setError("No se pudo subir el archivo. Probá de nuevo.");
     } finally {
       setIsUploading(false);
     }
@@ -55,7 +64,7 @@ export function ImageUploader({
     return (
       <div className="group relative overflow-hidden rounded-2xl border border-line">
         <div className="relative aspect-video sm:aspect-4/3">
-          <Image src={value.url} alt="Tu diseño" fill className="object-contain bg-panel" />
+          <MediaDisplay src={value.url} alt="Portada de la prenda" className="object-contain bg-panel" />
         </div>
         <button
           type="button"
@@ -69,12 +78,12 @@ export function ImageUploader({
           onClick={() => inputRef.current?.click()}
           className="absolute inset-x-0 bottom-0 bg-dark/70 py-2 text-center text-xs text-paper opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100"
         >
-          Cambiar imagen
+          Cambiar archivo
         </button>
         <input
           ref={inputRef}
           type="file"
-          accept="image/*"
+          accept={accept}
           className="hidden"
           onChange={(e) => {
             const file = e.target.files?.[0];
@@ -108,12 +117,12 @@ export function ImageUploader({
           <Upload className="text-ink-soft" size={28} strokeWidth={1.5} />
         )}
         <p className="text-sm text-ink-soft">
-          {isUploading ? "Subiendo..." : "Arrastrá tu imagen o hacé click"}
+          {isUploading ? "Subiendo..." : label}
         </p>
         <input
           ref={inputRef}
           type="file"
-          accept="image/*"
+          accept={accept}
           className="hidden"
           onChange={(e) => {
             const file = e.target.files?.[0];
@@ -125,3 +134,4 @@ export function ImageUploader({
     </div>
   );
 }
+

@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { Shirt, ArrowUpRight } from "lucide-react";
 import type { Product } from "@/lib/types";
 import { Reveal } from "./Reveal";
+import { MediaDisplay } from "./MediaDisplay";
 
 export function ProductGrid({ products }: { products: Product[] }) {
   if (products.length === 0) {
@@ -27,7 +28,7 @@ export function ProductGrid({ products }: { products: Product[] }) {
               className="relative aspect-[4/5] overflow-hidden rounded-2xl border border-line bg-accent-soft"
             >
               {p.image_url ? (
-                <Image
+                <MediaDisplay
                   src={p.image_url}
                   alt={p.name}
                   fill
