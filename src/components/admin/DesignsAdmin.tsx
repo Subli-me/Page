@@ -144,6 +144,11 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
     });
   }
 
+  // Extraer las categorías únicas actuales de la lista de diseños
+  const existingCategories = Array.from(
+    new Set(designs.map((d) => d.category).filter((c): c is string => Boolean(c)))
+  );
+
   async function updateCategory(id: string, category: string | null) {
     setDesigns((prev) => prev.map((d) => (d.id === id ? { ...d, category } : d)));
     await fetch(`/api/admin/designs/${id}`, {
@@ -151,6 +156,23 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ category }),
     });
+  }
+
+  async function applyBatchCategory(category: string | null) {
+    if (selectedIds.length === 0) return;
+    const idsToUpdate = [...selectedIds];
+    setDesigns((prev) =>
+      prev.map((d) => (idsToUpdate.includes(d.id) ? { ...d, category } : d))
+    );
+    await Promise.all(
+      idsToUpdate.map((id) =>
+        fetch(`/api/admin/designs/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ category }),
+        })
+      )
+    );
   }
 
   async function removeDesign(id: string) {
@@ -339,18 +361,43 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
       {/* Catálogo existente con búsqueda y selección múltiple */}
       <section className="space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <h2 className="font-display text-2xl italic">
-              Diseños cargados ({designs.length})
+              Diseños cargados ({filteredDesigns.length})
             </h2>
             {selectedIds.length > 0 && (
-              <button
-                type="button"
-                onClick={removeSelected}
-                className="inline-flex items-center gap-1.5 rounded-full bg-accent/15 px-3 py-1 text-xs font-medium text-accent hover:bg-accent hover:text-paper transition-colors"
-              >
-                <Trash2 size={13} /> Eliminar {selectedIds.length} seleccionados
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={removeSelected}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-accent/15 px-3 py-1 text-xs font-medium text-accent hover:bg-accent hover:text-paper transition-colors"
+                >
+                  <Trash2 size={13} /> Eliminar {selectedIds.length}
+                </button>
+                <select
+                  onChange={(e) => {
+                    if (e.target.value === "__NEW__") {
+                      const newCat = prompt("Ingresá el nombre de la nueva categoría (ej: Música, Anime, Series):");
+                      if (newCat && newCat.trim()) {
+                        applyBatchCategory(newCat.trim());
+                      }
+                    } else {
+                      applyBatchCategory(e.target.value || null);
+                    }
+                    e.target.value = "";
+                  }}
+                  className="rounded-full border border-line bg-panel px-3 py-1 text-xs font-medium text-ink hover:border-ink cursor-pointer"
+                >
+                  <option value="">Categoría a selección...</option>
+                  <option value="">Sin clasificar</option>
+                  {existingCategories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                  <option value="__NEW__">+ Crear nueva categoría...</option>
+                </select>
+              </div>
             )}
           </div>
 
@@ -361,13 +408,17 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="bg-transparent font-medium text-ink focus:outline-none cursor-pointer"
+                className="bg-transparent font-medium text-ink focus:outline-none cursor-pointer capitalize"
               >
                 <option value="todas">Todas ({designs.length})</option>
-                <option value="blanca">Remera blanca ({designs.filter(d => d.category === "blanca").length})</option>
-                <option value="negra">Remera negra ({designs.filter(d => d.category === "negra").length})</option>
-                <option value="ambas">Ambas ({designs.filter(d => d.category === "ambas").length})</option>
-                <option value="sin_clasificar">Sin clasificar ({designs.filter(d => !d.category).length})</option>
+                {existingCategories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat} ({designs.filter((d) => d.category === cat).length})
+                  </option>
+                ))}
+                <option value="sin_clasificar">
+                  Sin clasificar ({designs.filter((d) => !d.category).length})
+                </option>
               </select>
             </div>
 
@@ -456,17 +507,29 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
                     {d.name}
                   </p>
 
-                  {/* Selector de color de remera */}
+                  {/* Selector de Categoría personalizada */}
                   <div className="mt-1.5">
                     <select
                       value={d.category ?? ""}
-                      onChange={(e) => updateCategory(d.id, e.target.value || null)}
-                      className="w-full rounded-lg border border-line bg-paper px-2 py-1 text-[11px] text-ink focus:border-ink focus:outline-none"
+                      onChange={(e) => {
+                        if (e.target.value === "__NEW__") {
+                          const newCat = prompt("Ingresá el nombre de la nueva categoría (ej: Música, Anime, Series):");
+                          if (newCat && newCat.trim()) {
+                            updateCategory(d.id, newCat.trim());
+                          }
+                        } else {
+                          updateCategory(d.id, e.target.value || null);
+                        }
+                      }}
+                      className="w-full rounded-lg border border-line bg-paper px-2 py-1 text-[11px] text-ink focus:border-ink focus:outline-none capitalize"
                     >
                       <option value="">Sin clasificar</option>
-                      <option value="blanca">Remera blanca</option>
-                      <option value="negra">Remera negra</option>
-                      <option value="ambas">Ambas</option>
+                      {existingCategories.map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                      <option value="__NEW__">+ Nueva categoría...</option>
                     </select>
                   </div>
 
