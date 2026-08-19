@@ -224,7 +224,11 @@ export function OrderWizard({
               <div>
                 <div className="mb-3 flex items-center justify-between">
                   <p className="text-sm font-medium">Talle</p>
-                  <SizeGuideModal productSlug={product.slug} />
+                  <SizeGuideModal
+                    productSlug={product.slug}
+                    productName={product.name}
+                    sizes={productSizes}
+                  />
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {(productSizes.length ? productSizes.map((s) => s.size) : ["S", "M", "L", "XL"]).map((s) => (

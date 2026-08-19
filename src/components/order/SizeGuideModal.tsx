@@ -5,11 +5,20 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Ruler, X } from "lucide-react";
 import { getSizeGuide } from "@/lib/size-guides";
+import type { ProductSize } from "@/lib/types";
 
-export function SizeGuideModal({ productSlug }: { productSlug: string }) {
+export function SizeGuideModal({
+  productSlug,
+  productName,
+  sizes,
+}: {
+  productSlug: string;
+  productName?: string;
+  sizes?: ProductSize[];
+}) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const guide = getSizeGuide(productSlug);
+  const fallbackGuide = getSizeGuide(productSlug);
 
   useEffect(() => setMounted(true), []);
 
@@ -19,6 +28,9 @@ export function SizeGuideModal({ productSlug }: { productSlug: string }) {
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = prev; };
   }, [open]);
+
+  const hasDynamicSizes = sizes && sizes.length > 0;
+  const title = productName ?? fallbackGuide.label;
 
   const modal = (
     <AnimatePresence>
@@ -39,7 +51,7 @@ export function SizeGuideModal({ productSlug }: { productSlug: string }) {
             className="w-full max-w-sm rounded-2xl border border-line bg-panel p-6"
           >
             <div className="mb-5 flex items-center justify-between">
-              <h3 className="font-display text-xl italic">Guía de talles — {guide.label}</h3>
+              <h3 className="font-display text-xl italic">Guía de talles — {title}</h3>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
@@ -58,13 +70,21 @@ export function SizeGuideModal({ productSlug }: { productSlug: string }) {
                 </tr>
               </thead>
               <tbody>
-                {guide.rows.map((r) => (
-                  <tr key={r.size} className="border-b border-line/60 last:border-0">
-                    <td className="py-2 font-medium">{r.size}</td>
-                    <td className="py-2 text-ink-soft">{r.chestCm}</td>
-                    <td className="py-2 text-ink-soft">{r.lengthCm}</td>
-                  </tr>
-                ))}
+                {hasDynamicSizes
+                  ? sizes.map((s) => (
+                      <tr key={s.id} className="border-b border-line/60 last:border-0">
+                        <td className="py-2 font-medium">{s.size}</td>
+                        <td className="py-2 text-ink-soft">{s.chest_cm ?? "—"}</td>
+                        <td className="py-2 text-ink-soft">{s.length_cm ?? "—"}</td>
+                      </tr>
+                    ))
+                  : fallbackGuide.rows.map((r) => (
+                      <tr key={r.size} className="border-b border-line/60 last:border-0">
+                        <td className="py-2 font-medium">{r.size}</td>
+                        <td className="py-2 text-ink-soft">{r.chestCm}</td>
+                        <td className="py-2 text-ink-soft">{r.lengthCm}</td>
+                      </tr>
+                    ))}
               </tbody>
             </table>
 
