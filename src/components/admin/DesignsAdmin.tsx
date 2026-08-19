@@ -172,9 +172,16 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
     );
   }
 
-  const filteredDesigns = designs.filter((d) =>
-    d.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const [categoryFilter, setCategoryFilter] = useState<string>("todas");
+
+  const filteredDesigns = designs.filter((d) => {
+    const matchesSearch = d.name.toLowerCase().includes(search.toLowerCase());
+    if (!matchesSearch) return false;
+
+    if (categoryFilter === "todas") return true;
+    if (categoryFilter === "sin_clasificar") return !d.category;
+    return d.category === categoryFilter;
+  });
 
   const readyCount = staged.filter((s) => s.status === "ready").length;
   const uploadingCount = staged.filter((s) => s.status === "uploading").length;
@@ -347,12 +354,28 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
             )}
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Filtro por Categoría */}
+            <div className="flex items-center gap-1.5 rounded-lg border border-line bg-panel px-2.5 py-1 text-xs">
+              <span className="text-ink-soft">Categoría:</span>
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className="bg-transparent font-medium text-ink focus:outline-none cursor-pointer"
+              >
+                <option value="todas">Todas ({designs.length})</option>
+                <option value="blanca">Remera blanca ({designs.filter(d => d.category === "blanca").length})</option>
+                <option value="negra">Remera negra ({designs.filter(d => d.category === "negra").length})</option>
+                <option value="ambas">Ambas ({designs.filter(d => d.category === "ambas").length})</option>
+                <option value="sin_clasificar">Sin clasificar ({designs.filter(d => !d.category).length})</option>
+              </select>
+            </div>
+
             {/* Buscador */}
             <div className="relative">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft" />
               <input
-                className="input h-9 w-48 pl-8 text-xs sm:w-64"
+                className="input h-9 w-40 pl-8 text-xs sm:w-56"
                 placeholder="Buscar diseño..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
