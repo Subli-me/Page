@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { Nav } from "@/components/Nav";
+import { Hero } from "@/components/Hero";
 import { Footer } from "@/components/Footer";
 import { Marquee } from "@/components/Marquee";
 import { Reveal } from "@/components/Reveal";
@@ -67,68 +68,7 @@ export default async function Home({
 
       <main className="flex-1">
         {/* Hero */}
-        <section className="grain bg-dark text-paper">
-          <div className="mx-auto grid max-w-6xl gap-12 px-6 pt-20 pb-16 sm:grid-cols-[1.1fr_0.9fr] sm:items-center sm:pt-28 sm:pb-24">
-            <div>
-              <div className="mb-6 flex flex-wrap items-center gap-2">
-                <EditableText
-                  field="hero_badge"
-                  value={settings.hero_badge}
-                  as="p"
-                  className="inline-flex items-center gap-2 rounded-full border border-paper/20 px-4 py-1.5 text-xs uppercase tracking-[0.2em] text-lime"
-                />
-                <EditableColor field="color_lime" value={settings.color_lime} label="Lima" />
-                <EditableColor field="color_accent" value={settings.color_accent} label="Acento" />
-              </div>
-              <h1 className="font-display text-6xl leading-[0.95] tracking-tight sm:text-7xl">
-                <EditableText field="hero_title_line1" value={settings.hero_title_line1} as="span" />
-                <br />
-                <EditableText
-                  field="hero_title_line2"
-                  value={settings.hero_title_line2}
-                  as="span"
-                  className="italic text-lime"
-                />
-              </h1>
-              <EditableText
-                field="hero_subtitle"
-                value={settings.hero_subtitle}
-                as="p"
-                multiline
-                className="mt-8 block max-w-md text-lg text-paper/60"
-              />
-              <div className="mt-10 flex flex-wrap items-center gap-4">
-                <Link
-                  href="/pedido"
-                  className="group inline-flex items-center gap-2 rounded-full bg-lime px-7 py-4 font-medium text-dark transition-transform hover:-translate-y-0.5"
-                >
-                  <EditableText field="hero_cta_label" value={settings.hero_cta_label} as="span" />
-                  <ArrowUpRight
-                    size={18}
-                    className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-                  />
-                </Link>
-                <Link
-                  href="#catalogo"
-                  className="link-underline inline-flex items-center gap-2 px-2 py-4 text-paper/80"
-                >
-                  Ver prendas
-                </Link>
-              </div>
-            </div>
-
-            {settings.hero_image_url && (
-              <EditableImage field="hero_image_url">
-                <HeroImage
-                  src={settings.hero_image_url}
-                  alt={settings.hero_title_line1}
-                  logoUrl={settings.logo_url}
-                  logoAlt={settings.logo_text}
-                />
-              </EditableImage>
-            )}
-          </div>
-        </section>
+        <Hero settings={settings} />
 
         <Marquee text={settings.marquee_text} />
 
