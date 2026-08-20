@@ -155,6 +155,30 @@ export function ProductsAdmin({
     });
   }
 
+  async function moveSize(productId: string, sizeIndex: number, direction: "up" | "down") {
+    const productSizes = sizes.filter((s) => s.product_id === productId);
+    const targetIndex = direction === "up" ? sizeIndex - 1 : sizeIndex + 1;
+    if (targetIndex < 0 || targetIndex >= productSizes.length) return;
+
+    const newSizes = [...productSizes];
+    const [moved] = newSizes.splice(sizeIndex, 1);
+    newSizes.splice(targetIndex, 0, moved);
+
+    const updatedWithOrder = newSizes.map((s, idx) => ({ ...s, sort_order: idx }));
+    setSizes((prev) => [
+      ...prev.filter((s) => s.product_id !== productId),
+      ...updatedWithOrder,
+    ]);
+
+    await fetch("/api/admin/sizes/reorder", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        items: updatedWithOrder.map((s) => ({ id: s.id, sort_order: s.sort_order })),
+      }),
+    });
+  }
+
   async function addColor(productId: string, name: string, hex: string) {
     if (!name.trim()) return;
     const res = await fetch("/api/admin/colors", {
@@ -208,6 +232,7 @@ export function ProductsAdmin({
                   onAddSize={addSize}
                   onRemoveSize={removeSize}
                   onSaveSizeMeasurement={saveSizeMeasurement}
+                  onMoveSize={moveSize}
                   onAddColor={addColor}
                   onRemoveColor={removeColor}
                 />
@@ -313,6 +338,7 @@ function ProductRow({
   onAddSize,
   onRemoveSize,
   onSaveSizeMeasurement,
+  onMoveSize,
   onAddColor,
   onRemoveColor,
 }: {
@@ -336,6 +362,7 @@ function ProductRow({
   onAddSize: (productId: string, size: string) => void;
   onRemoveSize: (id: string) => void;
   onSaveSizeMeasurement: (id: string, field: "chest_cm" | "length_cm", value: number | null) => void;
+  onMoveSize: (productId: string, sizeIndex: number, direction: "up" | "down") => void;
   onAddColor: (productId: string, name: string, hex: string) => void;
   onRemoveColor: (id: string) => void;
 }) {
@@ -475,8 +502,32 @@ function ProductRow({
                     Pecho y largo en cm — se muestran en la sección pública de Talles.
                   </p>
                   <div className="space-y-1.5">
-                    {sizes.map((s) => (
+                    {sizes.map((s, sizeIndex) => (
                       <div key={s.id} className="flex items-center gap-2 rounded-lg border border-line bg-panel px-2 py-1.5 text-xs">
+                        <div className="flex items-center">
+                          <button
+                            type="button"
+                            onClick={() => onMoveSize(product.id, sizeIndex, "up")}
+                            disabled={sizeIndex === 0}
+                            className={clsx(
+                              "rounded p-0.5 text-ink-soft transition-colors",
+                              sizeIndex === 0 ? "opacity-20 cursor-not-allowed" : "hover:bg-accent-soft hover:text-accent"
+                            )}
+                          >
+                            <ChevronUp size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onMoveSize(product.id, sizeIndex, "down")}
+                            disabled={sizeIndex === sizes.length - 1}
+                            className={clsx(
+                              "rounded p-0.5 text-ink-soft transition-colors",
+                              sizeIndex === sizes.length - 1 ? "opacity-20 cursor-not-allowed" : "hover:bg-accent-soft hover:text-accent"
+                            )}
+                          >
+                            <ChevronDown size={14} />
+                          </button>
+                        </div>
                         <span className="w-8 shrink-0 font-medium">{s.size}</span>
                         <label className="flex items-center gap-1 text-ink-soft">
                           Pecho
