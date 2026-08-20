@@ -24,6 +24,31 @@ export default async function AdminDesignsPage() {
 
 async function fetchDesigns() {
   const supabase = createServiceClient();
-  const { data } = await supabase.from("design_catalog").select("*").order("sort_order");
-  return data ?? [];
+
+  // Obtener diseños
+  const { data: designs } = await supabase
+    .from("design_catalog")
+    .select("*")
+    .order("sort_order");
+
+  if (!designs) return [];
+
+  // Obtener asignaciones de categorías
+  const { data: assignments } = await supabase
+    .from("design_category_assignments")
+    .select("design_id, category_id");
+
+  const assignmentMap = new Map<string, string[]>();
+  (assignments || []).forEach((a: { design_id: string; category_id: string }) => {
+    if (!assignmentMap.has(a.design_id)) {
+      assignmentMap.set(a.design_id, []);
+    }
+    assignmentMap.get(a.design_id)!.push(a.category_id);
+  });
+
+  // Retornar diseños con category_ids
+  return designs.map((design) => ({
+    ...design,
+    category_ids: assignmentMap.get(design.id) || [],
+  }));
 }
