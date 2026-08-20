@@ -249,13 +249,21 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
     });
   }
 
-  async function updateColor(id: string, color: string | null) {
-    setDesigns((prev) => prev.map((d) => (d.id === id ? { ...d, color } : d)));
-    await fetch(`/api/admin/designs/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ color }),
-    });
+  async function assignColorsToDesign(designId: string, colorIds: string[]) {
+    try {
+      await fetch(`/api/admin/designs/${designId}/colors`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ color_ids: colorIds }),
+      });
+      setDesigns((prev) =>
+        prev.map((d) =>
+          d.id === designId ? { ...d, color_ids: colorIds } : d
+        )
+      );
+    } catch (err) {
+      console.error("Error asignando colores:", err);
+    }
   }
 
   async function removeDesign(id: string) {
@@ -282,7 +290,7 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
     const matchesSearch = d.name.toLowerCase().includes(search.toLowerCase());
     if (!matchesSearch) return false;
 
-    if (colorFilter && d.color !== colorFilter) return false;
+    if (colorFilter && !d.color_ids.includes(colorFilter)) return false;
     if (categoryFilter && !d.category_ids.includes(categoryFilter)) return false;
 
     return true;
@@ -655,19 +663,51 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
                     {d.name}
                   </p>
 
-                  {/* Selector de Color */}
-                  <div className="mt-1.5">
+                  {/* Selector y chips de Colores */}
+                  <div className="mt-2 space-y-2">
+                    {/* Chips de colores asignados */}
+                    {d.color_ids.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {d.color_ids.map((colorId) => {
+                          const color = COLORS.find((c) => c.value === colorId);
+                          return color ? (
+                            <button
+                              key={colorId}
+                              onClick={() => {
+                                const newIds = d.color_ids.filter((id) => id !== colorId);
+                                assignColorsToDesign(d.id, newIds);
+                              }}
+                              className="inline-flex items-center gap-1 rounded-full bg-lime/20 px-2 py-0.5 text-[10px] text-lime hover:bg-lime/40 transition-colors"
+                              title="Click para quitar"
+                            >
+                              {color.name}
+                              <X size={12} />
+                            </button>
+                          ) : null;
+                        })}
+                      </div>
+                    )}
+
+                    {/* Selector para agregar colores */}
                     <select
-                      value={d.color ?? ""}
-                      onChange={(e) => updateColor(d.id, e.target.value || null)}
+                      value=""
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          const newIds = [...d.color_ids, e.target.value];
+                          assignColorsToDesign(d.id, newIds);
+                          e.target.value = "";
+                        }
+                      }}
                       className="w-full rounded-lg border border-line bg-paper px-2 py-1 text-[11px] text-ink focus:border-ink focus:outline-none"
                     >
-                      <option value="">Sin color</option>
-                      {COLORS.map((c) => (
-                        <option key={c.value} value={c.value}>
-                          {c.name}
-                        </option>
-                      ))}
+                      <option value="">+ Agregar color</option>
+                      {COLORS
+                        .filter((c) => !d.color_ids.includes(c.value))
+                        .map((c) => (
+                          <option key={c.value} value={c.value}>
+                            {c.name}
+                          </option>
+                        ))}
                     </select>
                   </div>
 

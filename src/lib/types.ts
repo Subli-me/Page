@@ -68,7 +68,7 @@ export type DesignCatalogItem = {
   name: string;
   image_url: string;
   image_public_id: string;
-  color: string | null;
+  color_ids: string[];
   category_ids: string[];
   active: boolean;
   sort_order: number;

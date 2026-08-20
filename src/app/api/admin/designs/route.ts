@@ -40,12 +40,12 @@ export async function POST(req: Request) {
       .insert(rows)
       .select();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    const designsWithCategories = data?.map((d) => ({
+    const designsWithDetails = data?.map((d) => ({
       ...d,
-      color: null,
+      color_ids: [],
       category_ids: [],
     })) || [];
-    return NextResponse.json({ designs: designsWithCategories });
+    return NextResponse.json({ designs: designsWithDetails });
   } else {
     const { name, imageUrl, imagePublicId } = parsed.data;
     const { data, error } = await service
@@ -62,7 +62,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       design: {
         ...data,
-        color: null,
+        color_ids: [],
         category_ids: [],
       },
     });

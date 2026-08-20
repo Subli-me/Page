@@ -48,7 +48,7 @@ export function DesignGrid({ designs }: { designs: DesignCatalogItem[] }) {
 
   // Filtrar diseños según color y categoría
   const filtered = designs.filter((d) => {
-    if (activeColor && d.color !== activeColor) return false;
+    if (activeColor && !d.color_ids.includes(activeColor)) return false;
     if (activeCategory && !d.category_ids.includes(activeCategory)) return false;
     return true;
   });
@@ -56,7 +56,7 @@ export function DesignGrid({ designs }: { designs: DesignCatalogItem[] }) {
   // Contar diseños por color y categoría
   const colorCounts = COLORS.map((c) => ({
     ...c,
-    count: designs.filter((d) => d.color === c.value).length,
+    count: designs.filter((d) => d.color_ids.includes(c.value)).length,
   }));
 
   const categoryCounts = categories.map((cat) => ({
@@ -193,12 +193,12 @@ export function DesignGrid({ designs }: { designs: DesignCatalogItem[] }) {
                       className="object-contain p-3 transition-transform duration-500 group-hover:scale-110"
                     />
 
-                    {/* Badges de Color y Categoría */}
-                    {(d.color || designCategories.length > 0) && (
+                    {/* Badges de Colores y Categoría */}
+                    {(d.color_ids.length > 0 || designCategories.length > 0) && (
                       <div className="absolute left-2 top-2 flex flex-col gap-1">
-                        {d.color && (
+                        {d.color_ids.length > 0 && (
                           <span className="rounded-md bg-dark/70 px-2 py-0.5 text-[10px] font-medium text-paper backdrop-blur-xs capitalize">
-                            {COLORS.find((c) => c.value === d.color)?.name}
+                            {d.color_ids.map((cId) => COLORS.find((c) => c.value === cId)?.name).join(", ")}
                           </span>
                         )}
                         {designCategories.length > 0 && (
