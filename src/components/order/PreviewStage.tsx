@@ -32,7 +32,7 @@ type State =
       overlay: Overlay;
       designUrl: string | null;
     }
-  | { kind: "fallback" }
+  | { kind: "fallback"; overlay: Overlay; colorHex: string | null; designUrl: string | null }
   | { kind: "blank" }
   | { kind: "error" };
 
@@ -96,7 +96,12 @@ export function PreviewStage({
             designUrl: imageUrl,
           });
         } else if (data.canFallback && imageUrl && printZoneKey && zoneLabel) {
-          setState({ kind: "fallback" });
+          setState({
+            kind: "fallback",
+            overlay: data.fallbackOverlay || { x: 20, y: 20, w: 60, h: 60 },
+            colorHex: colorHex || null,
+            designUrl: imageUrl,
+          });
         } else {
           setState({ kind: "blank" });
         }
@@ -258,23 +263,21 @@ export function PreviewStage({
               <Loader2 className="h-9 w-9 animate-spin text-accent" />
               <p className="text-sm">Cargando...</p>
             </motion.div>
-          ) : state.kind === "fallback" && image && zoneLabel ? (
+          ) : state.kind === "fallback" ? (
             <motion.div
               key="fallback"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex flex-col items-center justify-center gap-4 p-10"
+              className="relative h-105 w-105 sm:h-135 sm:w-135 flex items-center justify-center"
+              style={{
+                backgroundColor: state.colorHex || "#f5f5f5",
+                borderRadius: "0.5rem",
+              }}
             >
-              <div className="relative h-40 w-40 overflow-hidden rounded-xl border border-line bg-panel shadow-sm">
-                <Image src={image.url} alt="Tu diseño" fill className="object-contain p-2" />
-              </div>
-              <p className="text-center text-sm text-ink-soft">
-                Estampado en <strong className="text-ink">{zoneLabel}</strong>
-              </p>
-              <p className="max-w-56 text-center text-xs text-ink-soft/70">
-                Todavía no cargamos una foto de esta prenda, pero tu diseño y la ubicación quedaron guardados.
-              </p>
+              {state.designUrl && (
+                <DesignAdjuster designUrl={state.designUrl} overlay={state.overlay} onChange={onDesignTransformChange} />
+              )}
             </motion.div>
           ) : state.kind === "error" ? (
             <motion.div

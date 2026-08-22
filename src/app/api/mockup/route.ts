@@ -98,5 +98,13 @@ export async function POST(req: Request) {
 
   // 3) Nada disponible: si al menos hay imagen y zona, mostramos el diseño
   // con la zona en texto en vez de dejar todo vacío.
-  return NextResponse.json({ available: false, canFallback: !!(imageUrl && printZoneKey) });
+  if (imageUrl && printZoneKey) {
+    return NextResponse.json({
+      available: false,
+      canFallback: true,
+      fallbackOverlay: { x: 20, y: 20, w: 60, h: 60 },
+    });
+  }
+
+  return NextResponse.json({ available: false, canFallback: false });
 }
