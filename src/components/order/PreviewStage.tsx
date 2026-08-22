@@ -38,13 +38,22 @@ type State =
 const ZOOM_STEPS = [1, 1.5, 2, 2.5];
 
 /**
- * Aclara un poco el color con el que se pinta la prenda.
+ * Cuántas veces se dibuja la foto de la prenda encima del color.
  *
- * La foto es un PNG cuya tela es casi transparente (alfa ~25 de 255), así que
- * el color de atrás aporta el 90% del resultado y los pliegues apenas el 10%.
- * Con un negro puro eso da una mancha plana sin relieve. Levantamos el color
- * mezclándolo con blanco, más cuanto más oscuro sea: el negro sigue leyéndose
- * como negro pero deja ver la tela, y los colores claros quedan casi intactos.
+ * La tela del PNG tiene un alfa de ~26 sobre 255, así que una sola pasada deja
+ * llegar apenas 11 niveles de contraste y la prenda se ve como un bloque plano.
+ * Cada copia vuelve a componer sobre la anterior: con tres, el relieve sube a
+ * ~30 niveles, que ya se lee, sin que los colores claros se ensucien (un blanco
+ * queda en ~221, dentro de lo que da la sombra real de una prenda).
+ */
+const GARMENT_LAYERS = 3;
+
+/**
+ * Aclara apenas el color con el que se pinta la prenda.
+ *
+ * Como el color de atrás aporta la mayor parte del resultado, un negro puro
+ * tira el resultado al piso. Lo mezclamos con blanco, más cuanto más oscuro
+ * sea: el negro sigue leyéndose como negro y los claros quedan intactos.
  */
 function fabricColor(hex: string): string {
   const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.trim());
@@ -52,7 +61,7 @@ function fabricColor(hex: string): string {
 
   const [r, g, b] = [1, 2, 3].map((i) => parseInt(m[i], 16));
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  const lift = 0.22 * (1 - luminance);
+  const lift = 0.12 * (1 - luminance);
   const mix = (c: number) => Math.round(c + (255 - c) * lift);
 
   return `rgb(${mix(r)}, ${mix(g)}, ${mix(b)})`;
@@ -235,6 +244,20 @@ export function PreviewStage({
                   className="relative block max-h-105 w-auto sm:max-h-135"
                   draggable={false}
                 />
+                {/* Copias apiladas para que los pliegues se noten. Es la misma
+                    URL, así que el navegador la descarga una sola vez. */}
+                {colorHex &&
+                  Array.from({ length: GARMENT_LAYERS - 1 }).map((_, i) => (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      key={i}
+                      src={state.baseImageUrl!}
+                      alt=""
+                      aria-hidden
+                      draggable={false}
+                      className="pointer-events-none absolute inset-0 h-full w-full"
+                    />
+                  ))}
               </div>
             ) : (
               <div
