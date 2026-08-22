@@ -256,8 +256,6 @@ export function OrderWizard({
       .filter((l) => l !== null)
       .join("\n");
 
-    const [principal, alternativo] = ORDER_WHATSAPP_NUMBERS;
-
     return (
       <div className="rounded-2xl border border-line bg-panel px-8 py-16 text-center">
         <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-accent-soft text-accent">
@@ -268,28 +266,27 @@ export function OrderWizard({
           {confirmationMessage} Te escribimos a <strong>{contact.email}</strong>.
         </p>
 
-        <div className="mt-8 flex flex-col items-center gap-3">
-          <a
-            href={whatsappLink(principal.wa, waMessage)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-full bg-ink px-6 py-3 text-sm font-medium text-paper transition-colors hover:bg-accent"
-          >
-            <MessageCircle size={16} /> Enviarnos el pedido por WhatsApp
-          </a>
-          <p className="max-w-sm text-xs text-ink-soft">
-            Así lo vemos al toque y te confirmamos más rápido. También podés
-            escribirnos al{" "}
-            <a
-              href={whatsappLink(alternativo.wa, waMessage)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline hover:text-ink"
-            >
-              {alternativo.label}
-            </a>
-            .
+        <div className="mx-auto mt-8 max-w-md rounded-xl border border-line bg-paper px-6 py-5">
+          <p className="text-sm font-medium">Mandanos el pedido por WhatsApp</p>
+          <p className="mt-1 text-xs text-ink-soft">
+            Así lo vemos al toque y te confirmamos más rápido. Elegí a quién
+            escribirle:
           </p>
+
+          <div className="mt-4 flex flex-wrap justify-center gap-2">
+            {ORDER_WHATSAPP_NUMBERS.map((n) => (
+              <a
+                key={n.wa}
+                href={whatsappLink(n.wa, waMessage)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-paper transition-colors hover:bg-accent"
+              >
+                <MessageCircle size={15} />
+                {n.name ?? n.label}
+              </a>
+            ))}
+          </div>
         </div>
       </div>
     );
