@@ -15,7 +15,14 @@ import {
   Trash2,
 } from "lucide-react";
 import clsx from "clsx";
-import type { PrintZone, Product, ProductColor, ProductSize, ProductMockup } from "@/lib/types";
+import type {
+  PrintZone,
+  PrintZoneCombo,
+  Product,
+  ProductColor,
+  ProductSize,
+  ProductMockup,
+} from "@/lib/types";
 import { EditableNumber } from "./EditableNumber";
 import { ImageUploader } from "@/components/order/ImageUploader";
 import { MediaDisplay } from "@/components/MediaDisplay";
@@ -28,18 +35,21 @@ export function ProductsAdmin({
   initialSizes,
   initialColors,
   initialMockups,
+  initialCombos,
 }: {
   initialProducts: Product[];
   initialZones: PrintZone[];
   initialSizes: ProductSize[];
   initialColors: ProductColor[];
   initialMockups: ProductMockup[];
+  initialCombos: PrintZoneCombo[];
 }) {
   const [products, setProducts] = useState(initialProducts);
   const [zones, setZones] = useState(initialZones);
   const [sizes, setSizes] = useState(initialSizes);
   const [colors, setColors] = useState(initialColors);
   const [mockups, setMockups] = useState(initialMockups);
+  const [combos, setCombos] = useState(initialCombos);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [editingMockup, setEditingMockup] = useState<{ productId: string; zoneKey: string } | null>(null);
   const [verifying, setVerifying] = useState(false);
@@ -81,6 +91,51 @@ export function ProductsAdmin({
 
   const [newProduct, setNewProduct] = useState({ name: "", price: "0", cost: "0" });
   const [newZone, setNewZone] = useState({ label: "", extraPrice: "0", extraCost: "0" });
+  const [newCombo, setNewCombo] = useState({ zoneA: "", zoneB: "", extraPrice: "0" });
+  const [comboError, setComboError] = useState<string | null>(null);
+
+  async function addCombo() {
+    setComboError(null);
+    if (!newCombo.zoneA || !newCombo.zoneB) {
+      setComboError("Elegí las dos zonas.");
+      return;
+    }
+    if (newCombo.zoneA === newCombo.zoneB) {
+      setComboError("Tienen que ser dos zonas distintas.");
+      return;
+    }
+
+    const res = await fetch("/api/admin/zone-combos", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        zoneA: newCombo.zoneA,
+        zoneB: newCombo.zoneB,
+        extraPrice: Number(newCombo.extraPrice) || 0,
+      }),
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      setComboError(json.error ?? "No se pudo guardar.");
+      return;
+    }
+    setCombos((prev) => [...prev, json.combo]);
+    setNewCombo({ zoneA: "", zoneB: "", extraPrice: "0" });
+  }
+
+  async function saveCombo(id: string, extraPrice: number) {
+    setCombos((prev) => prev.map((c) => (c.id === id ? { ...c, extra_price: extraPrice } : c)));
+    await fetch(`/api/admin/zone-combos/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ extra_price: extraPrice }),
+    });
+  }
+
+  async function removeCombo(id: string) {
+    setCombos((prev) => prev.filter((c) => c.id !== id));
+    await fetch(`/api/admin/zone-combos/${id}`, { method: "DELETE" });
+  }
 
   async function saveProduct(
     id: string,
@@ -443,6 +498,115 @@ export function ProductsAdmin({
           <button type="button" onClick={addZone} className="inline-flex items-center gap-1.5 rounded-full bg-ink px-5 py-2.5 text-sm text-paper hover:bg-accent">
             <Plus size={14} /> Agregar zona
           </button>
+        </div>
+      </section>
+
+      <section>
+        <h2 className="mb-1 font-display text-xl">Recargos por combinación</h2>
+        <p className="mb-4 max-w-2xl text-sm text-ink-soft">
+          Hay combinaciones que cuestan más que la suma de sus partes: estampar
+          pecho y espalda implica dos pasadas de prensa. Este recargo se suma
+          cuando el pedido incluye las dos zonas, sin importar en qué orden las
+          haya elegido el cliente.
+        </p>
+
+        <div className="overflow-x-auto rounded-2xl border border-line">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-line bg-panel text-left text-ink-soft">
+                <th className="px-4 py-3 font-medium">Combinación</th>
+                <th className="px-4 py-3 font-medium">Recargo</th>
+                <th className="px-4 py-3 font-medium" />
+              </tr>
+            </thead>
+            <tbody>
+              {combos.length === 0 ? (
+                <tr>
+                  <td colSpan={3} className="px-4 py-6 text-center text-ink-soft">
+                    Todavía no hay recargos por combinación.
+                  </td>
+                </tr>
+              ) : (
+                combos.map((c) => {
+                  const a = zones.find((z) => z.key === c.zone_a_key)?.label ?? c.zone_a_key;
+                  const b = zones.find((z) => z.key === c.zone_b_key)?.label ?? c.zone_b_key;
+                  return (
+                    <tr key={c.id} className="border-b border-line last:border-0">
+                      <td className="px-4 py-3">
+                        {a} <span className="text-ink-soft">+</span> {b}
+                      </td>
+                      <td className="px-4 py-3">
+                        <EditableNumber
+                          value={c.extra_price}
+                          onSave={(v) => saveCombo(c.id, v)}
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          type="button"
+                          onClick={() => removeCombo(c.id)}
+                          className="rounded-full p-1.5 text-ink-soft hover:bg-accent-soft hover:text-accent"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-end gap-3 rounded-xl border border-dashed border-line p-4">
+          <label className="text-sm">
+            <span className="mb-1 block text-ink-soft">Zona</span>
+            <select
+              className="input w-44"
+              value={newCombo.zoneA}
+              onChange={(e) => setNewCombo({ ...newCombo, zoneA: e.target.value })}
+            >
+              <option value="">Elegir...</option>
+              {zones.map((z) => (
+                <option key={z.id} value={z.key}>
+                  {z.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <span className="pb-2.5 text-ink-soft">+</span>
+          <label className="text-sm">
+            <span className="mb-1 block text-ink-soft">Zona</span>
+            <select
+              className="input w-44"
+              value={newCombo.zoneB}
+              onChange={(e) => setNewCombo({ ...newCombo, zoneB: e.target.value })}
+            >
+              <option value="">Elegir...</option>
+              {zones.map((z) => (
+                <option key={z.id} value={z.key}>
+                  {z.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-sm">
+            <span className="mb-1 block text-ink-soft">Recargo</span>
+            <input
+              type="number"
+              className="input w-28"
+              value={newCombo.extraPrice}
+              onChange={(e) => setNewCombo({ ...newCombo, extraPrice: e.target.value })}
+            />
+          </label>
+          <button
+            type="button"
+            onClick={addCombo}
+            className="inline-flex items-center gap-1.5 rounded-full bg-ink px-5 py-2.5 text-sm text-paper hover:bg-accent"
+          >
+            <Plus size={14} /> Agregar recargo
+          </button>
+          {comboError && <p className="w-full text-xs text-accent">{comboError}</p>}
         </div>
       </section>
     </div>

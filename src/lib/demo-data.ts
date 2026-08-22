@@ -1,4 +1,12 @@
-import type { PrintZone, Product, ProductColor, ProductSize, ProductMockup, SiteSettings } from "@/lib/types";
+import type {
+  PrintZone,
+  PrintZoneCombo,
+  Product,
+  ProductColor,
+  ProductSize,
+  ProductMockup,
+  SiteSettings,
+} from "@/lib/types";
 
 // Datos de muestra que se usan SOLO cuando no hay un Supabase real configurado
 // (NEXT_PUBLIC_SUPABASE_URL sigue en placeholder). Sirven para ver el sitio
@@ -76,6 +84,11 @@ export const DEMO_ZONES: PrintZone[] = [
 ];
 
 export const DEMO_MOCKUPS: ProductMockup[] = [];
+
+export const DEMO_ZONE_COMBOS: PrintZoneCombo[] = [
+  // Pecho + espalda: dos pasadas de prensa en la misma prenda.
+  { id: "zc1", zone_a_key: "back_full", zone_b_key: "front_chest", extra_price: 2000 },
+];
 
 export const DEMO_SETTINGS: SiteSettings = {
   id: 1,

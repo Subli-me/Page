@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 import { OrderWizard } from "@/components/order/OrderWizard";
-import { getActiveProducts, getPrintZones } from "@/lib/products";
+import { getActiveProducts, getPrintZones, getPrintZoneCombos } from "@/lib/products";
 import { getActiveDesigns } from "@/lib/designs";
 import { getSiteSettings } from "@/lib/settings";
 import { createClient } from "@/lib/supabase/server";
@@ -20,9 +20,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function PedidoPage() {
-  const [products, printZones, designs, settings] = await Promise.all([
+  const [products, printZones, zoneCombos, designs, settings] = await Promise.all([
     getActiveProducts(),
     getPrintZones(),
+    getPrintZoneCombos(),
     getActiveDesigns(),
     getSiteSettings(),
   ]);
@@ -61,6 +62,7 @@ export default async function PedidoPage() {
                 sizes={allSizes}
                 colors={allColors}
                 printZones={printZones}
+                zoneCombos={zoneCombos}
                 designs={designs}
                 confirmationTitle={settings.confirmation_title}
                 confirmationMessage={settings.confirmation_message}

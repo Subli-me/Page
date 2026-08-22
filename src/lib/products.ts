@@ -1,11 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
-import type { PrintZone, Product, ProductColor, ProductSize } from "@/lib/types";
+import type { PrintZone, PrintZoneCombo, Product, ProductColor, ProductSize } from "@/lib/types";
 import {
   isDemoMode,
   DEMO_PRODUCTS,
   DEMO_SIZES,
   DEMO_COLORS,
   DEMO_ZONES,
+  DEMO_ZONE_COMBOS,
 } from "@/lib/demo-data";
 
 export async function getActiveProducts(): Promise<Product[]> {
@@ -69,5 +70,12 @@ export async function getPrintZones(): Promise<PrintZone[]> {
   if (isDemoMode()) return DEMO_ZONES;
   const supabase = await createClient();
   const { data } = await supabase.from("print_zones").select("*").order("sort_order");
+  return data ?? [];
+}
+
+export async function getPrintZoneCombos(): Promise<PrintZoneCombo[]> {
+  if (isDemoMode()) return DEMO_ZONE_COMBOS;
+  const supabase = await createClient();
+  const { data } = await supabase.from("print_zone_combos").select("*");
   return data ?? [];
 }

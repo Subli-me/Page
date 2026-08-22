@@ -37,6 +37,19 @@ export type PrintZone = {
   sort_order: number;
 };
 
+/**
+ * Recargo que se suma cuando el pedido incluye las dos zonas del par.
+ *
+ * El par se guarda ordenado alfabéticamente (`zone_a_key < zone_b_key`), así
+ * "pecho + espalda" y "espalda + pecho" son la misma regla.
+ */
+export type PrintZoneCombo = {
+  id: string;
+  zone_a_key: string;
+  zone_b_key: string;
+  extra_price: number;
+};
+
 export type OrderStatus =
   | "pendiente"
   | "confirmado"

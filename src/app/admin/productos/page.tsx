@@ -1,12 +1,12 @@
 import { createServiceClient } from "@/lib/supabase/server";
 import { ProductsAdmin } from "@/components/admin/ProductsAdmin";
 import { DemoBanner } from "@/components/admin/DemoBanner";
-import { isDemoMode, DEMO_PRODUCTS, DEMO_ZONES, DEMO_SIZES, DEMO_COLORS, DEMO_MOCKUPS } from "@/lib/demo-data";
+import { isDemoMode, DEMO_PRODUCTS, DEMO_ZONES, DEMO_SIZES, DEMO_COLORS, DEMO_MOCKUPS, DEMO_ZONE_COMBOS } from "@/lib/demo-data";
 
 export default async function AdminProductsPage() {
   const demo = isDemoMode();
   const data = demo
-    ? { products: DEMO_PRODUCTS, printZones: DEMO_ZONES, sizes: DEMO_SIZES, colors: DEMO_COLORS, mockups: DEMO_MOCKUPS }
+    ? { products: DEMO_PRODUCTS, printZones: DEMO_ZONES, sizes: DEMO_SIZES, colors: DEMO_COLORS, mockups: DEMO_MOCKUPS, combos: DEMO_ZONE_COMBOS }
     : await fetchData();
 
   return (
@@ -24,6 +24,7 @@ export default async function AdminProductsPage() {
           initialSizes={data.sizes}
           initialColors={data.colors}
           initialMockups={data.mockups}
+          initialCombos={data.combos}
         />
       </div>
     </div>
@@ -32,12 +33,13 @@ export default async function AdminProductsPage() {
 
 async function fetchData() {
   const supabase = createServiceClient();
-  const [{ data: products }, { data: printZones }, { data: sizes }, { data: colors }, { data: mockups }] = await Promise.all([
+  const [{ data: products }, { data: printZones }, { data: sizes }, { data: colors }, { data: mockups }, { data: combos }] = await Promise.all([
     supabase.from("products").select("*").order("sort_order"),
     supabase.from("print_zones").select("*").order("sort_order"),
     supabase.from("product_sizes").select("*").order("sort_order"),
     supabase.from("product_colors").select("*").order("sort_order"),
     supabase.from("product_mockups").select("*"),
+    supabase.from("print_zone_combos").select("*"),
   ]);
   return {
     products: products ?? [],
@@ -45,5 +47,6 @@ async function fetchData() {
     sizes: sizes ?? [],
     colors: colors ?? [],
     mockups: mockups ?? [],
+    combos: combos ?? [],
   };
 }

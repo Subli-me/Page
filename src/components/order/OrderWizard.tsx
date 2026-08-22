@@ -8,7 +8,15 @@ import clsx from "clsx";
 import { Check, ChevronLeft, ChevronRight, MessageCircle, Shirt } from "lucide-react";
 import { ORDER_WHATSAPP_NUMBERS, whatsappLink } from "@/lib/contact";
 import { renderOrderPreview, uploadPreview } from "@/lib/order-preview";
-import type { DesignCatalogItem, PrintZone, Product, ProductColor, ProductSize } from "@/lib/types";
+import type {
+  DesignCatalogItem,
+  PrintZone,
+  PrintZoneCombo,
+  Product,
+  ProductColor,
+  ProductSize,
+} from "@/lib/types";
+import { comboExtraTotal, matchingCombos } from "@/lib/pricing";
 import { type UploadedImage } from "./ImageUploader";
 import { DesignPicker } from "./DesignPicker";
 import { PreviewStage } from "./PreviewStage";
@@ -26,6 +34,7 @@ export function OrderWizard({
   sizes,
   colors,
   printZones,
+  zoneCombos,
   designs,
   confirmationTitle,
   confirmationMessage,
@@ -34,6 +43,7 @@ export function OrderWizard({
   sizes: ProductSize[];
   colors: ProductColor[];
   printZones: PrintZone[];
+  zoneCombos: PrintZoneCombo[];
   designs: DesignCatalogItem[];
   confirmationTitle: string;
   confirmationMessage: string;
@@ -60,6 +70,13 @@ export function OrderWizard({
   const selectedColor = color ? productColors.find((c) => c.name === color) : null;
   const addedZoneKeys = Object.keys(prints);
 
+  // Recargos que aplican por combinar zonas (ej: pecho + espalda). El servidor
+  // recalcula el total con la misma función al guardar el pedido.
+  const activeCombos = useMemo(
+    () => matchingCombos(addedZoneKeys, zoneCombos),
+    [addedZoneKeys, zoneCombos]
+  );
+
   const total = useMemo(() => {
     if (!product) return 0;
     const sizeDelta = productSizes.find((s) => s.size === size)?.price_delta ?? 0;
@@ -67,8 +84,9 @@ export function OrderWizard({
       const zone = printZones.find((z) => z.key === key);
       return sum + Number(zone?.extra_price ?? 0);
     }, 0);
-    return Number(product.base_price) + Number(sizeDelta) + extraTotal;
-  }, [product, productSizes, size, addedZoneKeys, printZones]);
+    const comboTotal = comboExtraTotal(addedZoneKeys, zoneCombos);
+    return Number(product.base_price) + Number(sizeDelta) + extraTotal + comboTotal;
+  }, [product, productSizes, size, addedZoneKeys, printZones, zoneCombos]);
 
   const allZonesHaveImage = addedZoneKeys.length > 0 && addedZoneKeys.every((k) => prints[k].image);
 
@@ -223,6 +241,11 @@ export function OrderWizard({
           return extra > 0 ? `${zone?.label ?? k}: +${money(extra)}` : null;
         })
         .filter(Boolean),
+      ...activeCombos.map((c) => {
+        const a = printZones.find((z) => z.key === c.zone_a_key)?.label ?? c.zone_a_key;
+        const b = printZones.find((z) => z.key === c.zone_b_key)?.label ?? c.zone_b_key;
+        return `${a} + ${b}: +${money(c.extra_price)}`;
+      }),
       `TOTAL: ${money(total)}`,
     ].filter(Boolean);
 
@@ -430,6 +453,26 @@ export function OrderWizard({
                   onRemove={removeZone}
                   onSetActive={setActiveZone}
                 />
+
+                {/* Que el recargo por combinar zonas no aparezca recién en el
+                    total: acá se ve en el momento en que se activa. */}
+                {activeCombos.map((c) => {
+                  const a = printZones.find((z) => z.key === c.zone_a_key)?.label ?? c.zone_a_key;
+                  const b = printZones.find((z) => z.key === c.zone_b_key)?.label ?? c.zone_b_key;
+                  return (
+                    <p
+                      key={c.id}
+                      className="mt-3 rounded-lg border border-line bg-panel px-3 py-2 text-xs text-ink-soft"
+                    >
+                      Estampar <strong className="text-ink">{a}</strong> y{" "}
+                      <strong className="text-ink">{b}</strong> juntos suma{" "}
+                      <strong className="text-ink">
+                        ${Number(c.extra_price).toLocaleString("es-AR")}
+                      </strong>{" "}
+                      al total.
+                    </p>
+                  );
+                })}
               </div>
 
               {activeZone ? (

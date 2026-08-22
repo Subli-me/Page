@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { Resend } from "resend";
 import { createServiceClient } from "@/lib/supabase/server";
+import { comboExtraTotal } from "@/lib/pricing";
 
 const printSchema = z.object({
   printZoneKey: z.string().min(1),
@@ -57,7 +58,17 @@ export async function POST(req: Request) {
     .maybeSingle();
 
   const extraTotal = zones.reduce((sum, z) => sum + Number(z.extra_price), 0);
-  const totalPrice = Number(product.base_price) + extraTotal + Number(sizeDelta.data?.price_delta ?? 0);
+
+  // Recargos por combinación de zonas (ej: pecho + espalda). El precio lo
+  // decide el servidor, no lo que haya calculado el navegador.
+  const { data: combos } = await supabase.from("print_zone_combos").select("*");
+  const comboTotal = comboExtraTotal(zoneKeys, combos ?? []);
+
+  const totalPrice =
+    Number(product.base_price) +
+    extraTotal +
+    comboTotal +
+    Number(sizeDelta.data?.price_delta ?? 0);
 
   const { data: order, error } = await supabase
     .from("orders")
