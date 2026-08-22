@@ -2,7 +2,18 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { ChevronDown, ChevronUp, Plus, Shirt, Trash2, Edit2 } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Edit2,
+  Loader2,
+  Plus,
+  RefreshCw,
+  Shirt,
+  Trash2,
+} from "lucide-react";
 import clsx from "clsx";
 import type { PrintZone, Product, ProductColor, ProductSize, ProductMockup } from "@/lib/types";
 import { EditableNumber } from "./EditableNumber";
@@ -31,6 +42,42 @@ export function ProductsAdmin({
   const [mockups, setMockups] = useState(initialMockups);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [editingMockup, setEditingMockup] = useState<{ productId: string; zoneKey: string } | null>(null);
+  const [verifying, setVerifying] = useState(false);
+  const [verifyMsg, setVerifyMsg] = useState<string | null>(null);
+  const [brokenProductIds, setBrokenProductIds] = useState<string[]>([]);
+  const [brokenMockupIds, setBrokenMockupIds] = useState<string[]>([]);
+
+  // Revisa que las fotos de prendas y mockups sigan existiendo en Cloudinary.
+  // Vale la pena correrlo cada tanto: el navegador cachea, así que una foto
+  // caída se sigue viendo bien para quien ya la cargó y solo se rompe para los
+  // clientes nuevos.
+  async function verifyMedia() {
+    setVerifying(true);
+    setVerifyMsg(null);
+    try {
+      const res = await fetch("/api/admin/products/verify", { method: "POST" });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Falló la verificación");
+
+      const bp = json.brokenProducts.map((p: { id: string }) => p.id);
+      const bm = json.brokenMockups.map((m: { id: string }) => m.id);
+      setBrokenProductIds(bp);
+      setBrokenMockupIds(bm);
+
+      const partes = [];
+      if (bp.length) partes.push(`${bp.length} foto${bp.length > 1 ? "s" : ""} de prenda`);
+      if (bm.length) partes.push(`${bm.length} mockup${bm.length > 1 ? "s" : ""}`);
+      setVerifyMsg(
+        partes.length === 0
+          ? `Todo en orden: ${json.totalProducts} prendas y ${json.totalMockups} mockups disponibles.`
+          : `Falta el archivo de ${partes.join(" y ")}. Hay que volver a subirlos.`
+      );
+    } catch (e) {
+      setVerifyMsg(e instanceof Error ? e.message : "Falló la verificación");
+    } finally {
+      setVerifying(false);
+    }
+  }
 
   const [newProduct, setNewProduct] = useState({ name: "", price: "0", cost: "0" });
   const [newZone, setNewZone] = useState({ label: "", extraPrice: "0", extraCost: "0" });
@@ -240,7 +287,37 @@ export function ProductsAdmin({
   return (
     <div className="space-y-10">
       <section>
-        <h2 className="mb-4 font-display text-xl">Prendas</h2>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-display text-xl">Prendas</h2>
+          <button
+            type="button"
+            onClick={verifyMedia}
+            disabled={verifying}
+            title="Revisa que las fotos de las prendas y los mockups sigan existiendo"
+            className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-medium hover:border-ink hover:bg-panel transition-colors disabled:opacity-50"
+          >
+            {verifying ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+            {verifying ? "Verificando..." : "Verificar fotos"}
+          </button>
+        </div>
+
+        {verifyMsg && (
+          <div
+            className={clsx(
+              "mb-4 flex items-center gap-2 rounded-xl border px-4 py-2.5 text-xs",
+              brokenProductIds.length || brokenMockupIds.length
+                ? "border-accent/30 bg-accent/10 text-accent"
+                : "border-line bg-panel text-ink-soft"
+            )}
+          >
+            {brokenProductIds.length || brokenMockupIds.length ? (
+              <AlertTriangle size={14} className="shrink-0" />
+            ) : (
+              <Check size={14} className="shrink-0" />
+            )}
+            <span>{verifyMsg}</span>
+          </div>
+        )}
         <div className="overflow-x-auto rounded-2xl border border-line">
           <table className="w-full text-sm">
             <thead>
@@ -268,6 +345,8 @@ export function ProductsAdmin({
                   colors={colors.filter((c) => c.product_id === p.id)}
                   mockups={mockups.filter((m) => m.product_id === p.id)}
                   zones={zones}
+                  imageBroken={brokenProductIds.includes(p.id)}
+                  brokenMockupIds={brokenMockupIds}
                   expanded={expanded === p.id}
                   onToggleExpand={() => setExpanded((e) => (e === p.id ? null : p.id))}
                   onSaveField={saveProduct}
@@ -376,6 +455,8 @@ function ProductRow({
   colors,
   mockups,
   zones,
+  imageBroken,
+  brokenMockupIds,
   expanded,
   index,
   isFirst,
@@ -403,6 +484,8 @@ function ProductRow({
   colors: ProductColor[];
   mockups: ProductMockup[];
   zones: PrintZone[];
+  imageBroken: boolean;
+  brokenMockupIds: string[];
   expanded: boolean;
   index: number;
   isFirst: boolean;
@@ -477,8 +560,11 @@ function ProductRow({
             <button
               type="button"
               onClick={onToggleExpand}
-              className="relative h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-line bg-accent-soft hover:opacity-80 transition-opacity"
-              title="Cambiar foto/video / detalles"
+              className={clsx(
+                "relative h-10 w-10 shrink-0 overflow-hidden rounded-lg border bg-accent-soft hover:opacity-80 transition-opacity",
+                imageBroken ? "border-accent" : "border-line"
+              )}
+              title={imageBroken ? "Falta el archivo de esta foto" : "Cambiar foto/video / detalles"}
             >
               {product.image_url ? (
                 <MediaDisplay src={product.image_url} alt={product.name} fill className="object-cover" />
@@ -487,10 +573,20 @@ function ProductRow({
                   <Shirt size={18} />
                 </div>
               )}
+              {imageBroken && (
+                <span className="absolute inset-0 flex items-center justify-center bg-dark/70 text-lime">
+                  <AlertTriangle size={14} />
+                </span>
+              )}
             </button>
             <button type="button" onClick={onToggleExpand} className="inline-flex items-center gap-1.5 hover:text-accent text-left">
               {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
               <span>{product.name}</span>
+              {imageBroken && (
+                <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-medium text-accent">
+                  falta la foto
+                </span>
+              )}
             </button>
           </div>
         </td>
@@ -738,7 +834,14 @@ function ProductRow({
                       <div key={zone.id} className="flex items-center justify-between rounded-lg border border-line bg-panel px-3 py-2">
                         <span className="text-xs font-medium">
                           {zone.label}
-                          {mockup && <span className="ml-2 text-[10px] text-ink-soft">foto cargada</span>}
+                          {mockup &&
+                            (brokenMockupIds.includes(mockup.id) ? (
+                              <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-medium text-accent">
+                                <AlertTriangle size={10} /> falta el archivo
+                              </span>
+                            ) : (
+                              <span className="ml-2 text-[10px] text-ink-soft">foto cargada</span>
+                            ))}
                         </span>
                         <div className="flex items-center gap-2">
                           <button
