@@ -15,6 +15,9 @@ import {
   Edit2,
   GripVertical,
   Palette,
+  RefreshCw,
+  AlertTriangle,
+  LifeBuoy,
 } from "lucide-react";
 import clsx from "clsx";
 import type { DesignCatalogItem, DesignCategory } from "@/lib/types";
@@ -70,6 +73,11 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [loadingCategories, setLoadingCategories] = useState(true);
+  const [verifying, setVerifying] = useState(false);
+  const [brokenIds, setBrokenIds] = useState<string[] | null>(null);
+  const [recoveringId, setRecoveringId] = useState<string | null>(null);
+  const [recoveringAll, setRecoveringAll] = useState(false);
+  const [verifyMsg, setVerifyMsg] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Cargar categorías
@@ -282,6 +290,86 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
 
     await Promise.all(
       idsToDelete.map((id) => fetch(`/api/admin/designs/${id}`, { method: "DELETE" }))
+    );
+  }
+
+  // Revisa contra Cloudinary que el archivo de cada diseño siga existiendo.
+  async function verifyImages() {
+    setVerifying(true);
+    setVerifyMsg(null);
+    try {
+      const res = await fetch("/api/admin/designs/verify", { method: "POST" });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Falló la verificación");
+
+      const ids = (json.broken ?? []).map((b: { id: string }) => b.id);
+      setBrokenIds(ids);
+      setVerifyMsg(
+        ids.length === 0
+          ? `Todo en orden: ${json.okCount} de ${json.total} imágenes disponibles.`
+          : `${ids.length} de ${json.total} imágenes no están en Cloudinary.`
+      );
+    } catch (e) {
+      setVerifyMsg(e instanceof Error ? e.message : "Falló la verificación");
+    } finally {
+      setVerifying(false);
+    }
+  }
+
+  // Intenta rescatar una imagen desde la caché del optimizador de Next.
+  // Devuelve true si lo logró, para poder reusarla en la recuperación masiva.
+  async function recoverImage(id: string, silent = false) {
+    if (!silent) setRecoveringId(id);
+    try {
+      const res = await fetch(`/api/admin/designs/${id}/recover`, { method: "POST" });
+      const json = await res.json();
+
+      if (json.recovered) {
+        setDesigns((prev) =>
+          prev.map((d) =>
+            d.id === id
+              ? { ...d, image_url: json.imageUrl, image_public_id: json.imagePublicId }
+              : d
+          )
+        );
+        setBrokenIds((prev) => (prev ? prev.filter((b) => b !== id) : prev));
+        if (!silent) {
+          setVerifyMsg(`Recuperada desde la caché (${json.source}, ${json.width}x${json.height}).`);
+        }
+        return true;
+      }
+      if (!silent) setVerifyMsg(json.reason ?? json.error ?? "No se pudo recuperar.");
+      return false;
+    } catch {
+      if (!silent) setVerifyMsg("No se pudo recuperar.");
+      return false;
+    } finally {
+      if (!silent) setRecoveringId(null);
+    }
+  }
+
+  // Recupera todas las rotas de una. Va de a una para no saturar Cloudinary
+  // ni la caché de Vercel, e informa cuántas quedaron sin copia.
+  async function recoverAll() {
+    if (!brokenIds || brokenIds.length === 0) return;
+    const ids = [...brokenIds];
+    setRecoveringAll(true);
+    setVerifyMsg(`Recuperando 0 de ${ids.length}...`);
+
+    let done = 0;
+    let failed = 0;
+    for (const id of ids) {
+      const ok = await recoverImage(id, true);
+      if (ok) done++;
+      else failed++;
+      setVerifyMsg(`Recuperando ${done + failed} de ${ids.length}...`);
+    }
+
+    setRecoveringAll(false);
+    setVerifyMsg(
+      failed === 0
+        ? `Listo: se recuperaron las ${done} imágenes.`
+        : `Se recuperaron ${done} de ${ids.length}. ${failed} no tenían copia en caché y hay que subirlas a mano.`
     );
   }
 
@@ -600,6 +688,18 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
               />
             </div>
 
+            {/* Verificar que las imágenes sigan existiendo en Cloudinary */}
+            <button
+              type="button"
+              onClick={verifyImages}
+              disabled={verifying}
+              title="Revisa que el archivo de cada diseño siga en Cloudinary"
+              className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-medium hover:border-ink hover:bg-panel transition-colors disabled:opacity-50"
+            >
+              {verifying ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+              {verifying ? "Verificando..." : "Verificar imágenes"}
+            </button>
+
             {/* Acciones de Selección */}
             {selectedIds.length > 0 && (
               <button
@@ -613,6 +713,40 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
           </div>
         </div>
 
+        {verifyMsg && (
+          <div
+            className={clsx(
+              "mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border px-4 py-2.5 text-xs",
+              brokenIds && brokenIds.length > 0
+                ? "border-accent/30 bg-accent/10 text-accent"
+                : "border-line bg-panel text-ink-soft"
+            )}
+          >
+            {brokenIds && brokenIds.length > 0 ? (
+              <AlertTriangle size={14} className="shrink-0" />
+            ) : (
+              <Check size={14} className="shrink-0" />
+            )}
+            <span>{verifyMsg}</span>
+
+            {brokenIds && brokenIds.length > 0 && (
+              <button
+                type="button"
+                onClick={recoverAll}
+                disabled={recoveringAll || !!recoveringId}
+                className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1 text-[11px] font-medium text-paper hover:bg-accent/90 disabled:opacity-60"
+              >
+                {recoveringAll ? (
+                  <Loader2 size={12} className="animate-spin" />
+                ) : (
+                  <LifeBuoy size={12} />
+                )}
+                {recoveringAll ? "Recuperando..." : `Recuperar las ${brokenIds.length}`}
+              </button>
+            )}
+          </div>
+        )}
+
         {filteredDesigns.length === 0 ? (
           <div className="rounded-2xl border border-line bg-panel p-12 text-center text-ink-soft">
             {search ? (
@@ -625,6 +759,7 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
             {filteredDesigns.map((d) => {
               const isSelected = selectedIds.includes(d.id);
+              const isBroken = brokenIds?.includes(d.id) ?? false;
               return (
                 <div
                   key={d.id}
@@ -635,7 +770,9 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
                     "group relative flex flex-col justify-between rounded-xl border p-2.5 transition-all cursor-move",
                     isSelected
                       ? "border-accent bg-accent-soft/20 ring-2 ring-accent"
-                      : "border-line bg-panel hover:border-ink"
+                      : isBroken
+                        ? "border-accent/60 bg-accent/5"
+                        : "border-line bg-panel hover:border-ink"
                   )}
                 >
                   {/* Selector checkbox */}
@@ -657,6 +794,27 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
 
                   <div className="relative aspect-square overflow-hidden rounded-lg bg-accent-soft">
                     <Image src={d.image_url} alt={d.name} fill className="object-contain" />
+                    {isBroken && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-dark/75 px-2 text-center">
+                        <AlertTriangle size={18} className="text-lime" />
+                        <p className="text-[10px] leading-tight text-paper">
+                          El archivo no está en Cloudinary
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => recoverImage(d.id)}
+                          disabled={recoveringId === d.id || recoveringAll}
+                          className="inline-flex items-center gap-1 rounded-full bg-lime px-2.5 py-1 text-[10px] font-medium text-dark hover:bg-lime/90 disabled:opacity-60"
+                        >
+                          {recoveringId === d.id || recoveringAll ? (
+                            <Loader2 size={11} className="animate-spin" />
+                          ) : (
+                            <LifeBuoy size={11} />
+                          )}
+                          {recoveringId === d.id ? "Recuperando..." : "Recuperar"}
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <p className="mt-2 truncate text-xs font-medium text-ink" title={d.name}>
