@@ -673,24 +673,29 @@ function ProductRow({
                     const mockup = mockups.find((m) => m.print_zone_key === zone.key);
                     return (
                       <div key={zone.id} className="flex items-center justify-between rounded-lg border border-line bg-panel px-3 py-2">
-                        <span className="text-xs font-medium">{zone.label}</span>
-                        <button
-                          type="button"
-                          onClick={() => onEditMockup({ productId: product.id, zoneKey: zone.key })}
-                          className="inline-flex items-center gap-1.5 rounded-full bg-ink px-3 py-1 text-xs text-paper hover:bg-accent"
-                        >
-                          <Edit2 size={12} />
-                          {mockup ? "Editar" : "Agregar"}
-                        </button>
-                        {mockup && (
+                        <span className="text-xs font-medium">
+                          {zone.label}
+                          {mockup && <span className="ml-2 text-[10px] text-ink-soft">foto cargada</span>}
+                        </span>
+                        <div className="flex items-center gap-2">
                           <button
                             type="button"
-                            onClick={() => onRemoveMockup(mockup.id)}
-                            className="text-ink-soft hover:text-accent"
+                            onClick={() => onEditMockup({ productId: product.id, zoneKey: zone.key })}
+                            className="inline-flex items-center gap-1.5 rounded-full bg-ink px-3 py-1 text-xs text-paper hover:bg-accent"
                           >
-                            <Trash2 size={12} />
+                            <Edit2 size={12} />
+                            {mockup ? "Editar" : "Agregar"}
                           </button>
-                        )}
+                          {mockup && (
+                            <button
+                              type="button"
+                              onClick={() => onRemoveMockup(mockup.id)}
+                              className="text-ink-soft hover:text-accent"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     );
                   })}

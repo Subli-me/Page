@@ -22,14 +22,12 @@ export function MockupZoneEditor({ mockup, imageUrl, onSave, onClose }: MockupZo
   const [mode, setMode] = useState<InteractionMode>("idle");
   const [startX, setStartX] = useState(0);
   const [startY, setStartY] = useState(0);
-  const [zone, setZone] = useState({
-    x: mockup?.overlay_x ?? 50,
-    y: mockup?.overlay_y ?? 50,
-    w: mockup?.overlay_w ?? 200,
-    h: mockup?.overlay_h ?? 200,
-  });
+  const [zone, setZone] = useState({ x: 0, y: 0, w: 0, h: 0 });
   const [previewSrc, setPreviewSrc] = useState(imageUrl);
   const [canvasSize, setCanvasSize] = useState({ w: 800, h: 600 });
+  // La base de datos guarda la zona en % del ancho/alto de la foto, pero el
+  // canvas trabaja en píxeles: convertimos una sola vez al cargar la imagen.
+  const initializedRef = useRef(false);
 
   // Redraw canvas
   useEffect(() => {
@@ -44,6 +42,22 @@ export function MockupZoneEditor({ mockup, imageUrl, onSave, onClose }: MockupZo
       canvas.width = img.width;
       canvas.height = img.height;
       setCanvasSize({ w: img.width, h: img.height });
+
+      if (!initializedRef.current) {
+        initializedRef.current = true;
+        // Los mockups guardados antes de este editor podían tener píxeles en
+        // vez de %, así que acotamos al rango válido para no salirnos de la foto.
+        const pct = (value: number | undefined, fallback: number) =>
+          Math.min(100, Math.max(0, Number(value ?? fallback)));
+        setZone({
+          x: (pct(mockup?.overlay_x, 30) / 100) * img.width,
+          y: (pct(mockup?.overlay_y, 30) / 100) * img.height,
+          w: (pct(mockup?.overlay_w, 40) / 100) * img.width,
+          h: (pct(mockup?.overlay_h, 40) / 100) * img.height,
+        });
+        return;
+      }
+
       ctx.drawImage(img, 0, 0);
 
       // Rectángulo semi-transparente fuera del área
@@ -72,10 +86,23 @@ export function MockupZoneEditor({ mockup, imageUrl, onSave, onClose }: MockupZo
       });
     };
     img.src = previewSrc;
-  }, [zone, previewSrc]);
+  }, [zone, previewSrc, mockup]);
+
+  // El canvas se muestra escalado para entrar en el modal, así que hay que
+  // pasar las coordenadas del mouse a la escala real de la imagen.
+  const getCanvasCoords = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current!;
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: ((e.clientX - rect.left) / rect.width) * canvas.width,
+      y: ((e.clientY - rect.top) / rect.height) * canvas.height,
+    };
+  };
 
   const getInteractionMode = (x: number, y: number): InteractionMode => {
-    const margin = 15;
+    const canvas = canvasRef.current;
+    const displayScale = canvas ? canvas.width / (canvas.getBoundingClientRect().width || canvas.width) : 1;
+    const margin = 12 * displayScale;
     const isNearLeft = Math.abs(x - zone.x) < margin;
     const isNearRight = Math.abs(x - (zone.x + zone.w)) < margin;
     const isNearTop = Math.abs(y - zone.y) < margin;
@@ -115,9 +142,7 @@ export function MockupZoneEditor({ mockup, imageUrl, onSave, onClose }: MockupZo
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!canvasRef.current) return;
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const { x, y } = getCanvasCoords(e);
 
     setStartX(x);
     setStartY(y);
@@ -127,9 +152,7 @@ export function MockupZoneEditor({ mockup, imageUrl, onSave, onClose }: MockupZo
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!canvasRef.current) return;
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const { x, y } = getCanvasCoords(e);
 
     updateCanvasCursor(x, y);
 
@@ -236,6 +259,19 @@ export function MockupZoneEditor({ mockup, imageUrl, onSave, onClose }: MockupZo
 
         {previewSrc && (
           <>
+            <div className="mb-2 flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  initializedRef.current = false;
+                  setPreviewSrc(null);
+                }}
+                className="text-xs text-ink-soft underline hover:text-accent"
+              >
+                Cambiar imagen
+              </button>
+            </div>
+
             {/* Canvas interactivo */}
             <div className="mb-6 rounded-lg border border-line bg-paper overflow-auto" ref={containerRef}>
               <canvas
@@ -287,14 +323,16 @@ export function MockupZoneEditor({ mockup, imageUrl, onSave, onClose }: MockupZo
             <div className="flex gap-3">
               <button
                 onClick={() => {
+                  const pct = (value: number, total: number) =>
+                    Math.round((value / total) * 10000) / 100;
                   onSave({
                     print_zone_key: mockup?.print_zone_key ?? "",
                     image_url: previewSrc ?? "",
                     image_public_id: mockup?.image_public_id ?? "",
-                    overlay_x: Math.round(zone.x),
-                    overlay_y: Math.round(zone.y),
-                    overlay_w: Math.round(zone.w),
-                    overlay_h: Math.round(zone.h),
+                    overlay_x: pct(zone.x, canvasSize.w),
+                    overlay_y: pct(zone.y, canvasSize.h),
+                    overlay_w: pct(zone.w, canvasSize.w),
+                    overlay_h: pct(zone.h, canvasSize.h),
                   });
                   onClose();
                 }}

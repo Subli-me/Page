@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { Grid3x3, ImagePlus, Loader2, Minus, Plus, Sparkles } from "lucide-react";
 import clsx from "clsx";
@@ -133,16 +132,22 @@ export function PreviewStage({
                   alt="Prenda"
                   className="block max-h-105 w-auto sm:max-h-135"
                   draggable={false}
-                  style={colorHex ? { filter: `drop-shadow(0 0 0 ${colorHex})` } : undefined}
                 />
                 {colorHex && (
+                  /* Tiñe la prenda manteniendo sombras y pliegues. La máscara
+                     limita el color a la silueta cuando la foto es PNG con fondo
+                     transparente. */
                   <div
-                    className="absolute inset-0 pointer-events-none"
+                    className="pointer-events-none absolute inset-0"
                     style={{
                       backgroundColor: colorHex,
                       mixBlendMode: "multiply",
-                      maxHeight: "inherit",
-                      maxWidth: "inherit",
+                      WebkitMaskImage: `url(${state.baseImageUrl})`,
+                      maskImage: `url(${state.baseImageUrl})`,
+                      WebkitMaskSize: "100% 100%",
+                      maskSize: "100% 100%",
+                      WebkitMaskRepeat: "no-repeat",
+                      maskRepeat: "no-repeat",
                     }}
                   />
                 )}
