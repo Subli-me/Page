@@ -51,6 +51,11 @@ export function PreviewStage({
   const [state, setState] = useState<State>({ kind: "blank" });
   const [zoomIndex, setZoomIndex] = useState(0);
   const [showGrid, setShowGrid] = useState(false);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [panning, setPanning] = useState(false);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const panStart = useRef<{ x: number; y: number; pan: { x: number; y: number } } | null>(null);
   const requestId = useRef(0);
   const imageUrl = image?.url ?? null;
   const zoom = ZOOM_STEPS[zoomIndex];
@@ -61,6 +66,58 @@ export function PreviewStage({
   useEffect(() => {
     setZoomIndex(0);
   }, [effectiveZoneKey]);
+
+  // Al volver al 100% no queda nada fuera de vista, así que recentramos; al
+  // alejar, el desplazamiento anterior puede quedar pasado de rango.
+  useEffect(() => {
+    if (zoom === 1) setPan({ x: 0, y: 0 });
+    else setPan((p) => clampPan(p));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zoom]);
+
+  // No dejamos arrastrar la prenda más allá de lo que sobresale del recuadro.
+  function clampPan(next: { x: number; y: number }) {
+    const stage = stageRef.current;
+    const content = contentRef.current;
+    if (!stage || !content) return next;
+
+    const maxX = Math.max(0, (content.offsetWidth * zoom - stage.clientWidth) / 2);
+    const maxY = Math.max(0, (content.offsetHeight * zoom - stage.clientHeight) / 2);
+    return {
+      x: Math.min(maxX, Math.max(-maxX, next.x)),
+      y: Math.min(maxY, Math.max(-maxY, next.y)),
+    };
+  }
+
+  // Arrastre para recorrer la prenda con zoom. El diseño frena la propagación
+  // en su propio pointerdown, así que moverlo no mueve la vista.
+  function startPan(e: React.PointerEvent) {
+    if (zoom === 1) return;
+    // Los controles de zoom viven dentro del área arrastrable.
+    if ((e.target as HTMLElement).closest("button")) return;
+    e.preventDefault();
+    panStart.current = { x: e.clientX, y: e.clientY, pan };
+    setPanning(true);
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  }
+
+  function movePan(e: React.PointerEvent) {
+    const start = panStart.current;
+    if (!start) return;
+    setPan(
+      clampPan({
+        x: start.pan.x + (e.clientX - start.x),
+        y: start.pan.y + (e.clientY - start.y),
+      })
+    );
+  }
+
+  function endPan(e: React.PointerEvent) {
+    if (!panStart.current) return;
+    panStart.current = null;
+    setPanning(false);
+    (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+  }
 
   useEffect(() => {
     if (!effectiveZoneKey) {
@@ -120,10 +177,22 @@ export function PreviewStage({
     const zoneChosen = !!printZoneKey;
     return (
       <div className="overflow-hidden rounded-2xl border border-line bg-panel">
-        <div className="relative flex h-110 items-center justify-center overflow-hidden bg-accent-soft/20 sm:h-140">
+        <div
+          ref={stageRef}
+          onPointerDown={startPan}
+          onPointerMove={movePan}
+          onPointerUp={endPan}
+          onPointerCancel={endPan}
+          className={clsx(
+            "relative flex h-110 items-center justify-center overflow-hidden bg-accent-soft/20 sm:h-140",
+            zoom > 1 && (panning ? "cursor-grabbing" : "cursor-grab")
+          )}
+          style={{ touchAction: zoom > 1 ? "none" : undefined }}
+        >
           <div
-            className="relative transition-transform duration-200"
-            style={{ transform: `scale(${zoom})` }}
+            ref={contentRef}
+            className={clsx("relative", !panning && "transition-transform duration-200")}
+            style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}
           >
             {state.baseImageUrl ? (
               /* La foto de la prenda es un PNG donde la tela es semitransparente
@@ -242,6 +311,7 @@ export function PreviewStage({
           {state.designUrl
             ? "Arrastrá tu diseño para moverlo, y el círculo de la esquina para agrandarlo o rotarlo."
             : "Subí tu imagen para verla puesta acá."}
+          {zoom > 1 && " Con zoom, arrastrá la prenda para recorrerla."}
         </p>
       </div>
     );
