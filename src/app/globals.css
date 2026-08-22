@@ -59,19 +59,25 @@ html {
   color: var(--paper);
 }
 
-.input {
-  width: 100%;
-  border: 1px solid var(--line);
-  border-radius: 0.75rem;
-  padding: 0.65rem 0.9rem;
-  background: var(--paper);
-  color: var(--ink);
-  outline: none;
-  transition: border-color 0.15s ease;
-}
+/* Va en la capa `components` a propósito: el CSS sin capa le gana a las capas
+   pase lo que pase con la especificidad, así que definida suelta esta clase
+   pisaba a las utilidades de Tailwind. Un `pl-8` para dejarle lugar a un ícono,
+   o un `h-8` para achicar el control, no tenían efecto. */
+@layer components {
+  .input {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 0.75rem;
+    padding: 0.65rem 0.9rem;
+    background: var(--paper);
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
 
-.input:focus {
-  border-color: var(--accent);
+  .input:focus {
+    border-color: var(--accent);
+  }
 }
 
 /* Textura de grano — le da textura de papel/impreso a los bloques oscuros */

@@ -112,7 +112,7 @@ export function DesignPicker({
               className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft"
             />
             <input
-              className="input h-9 w-full pl-8 pr-8 text-sm"
+              className="input h-10 w-full py-0 pl-9 pr-9 text-sm"
               placeholder="Buscar diseño..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -131,7 +131,7 @@ export function DesignPicker({
 
           <div className="flex flex-wrap gap-2">
             <select
-              className="input h-8 flex-1 min-w-28 text-xs"
+              className="input h-10 flex-1 min-w-28 py-0 pr-8 text-xs"
               value={color}
               onChange={(e) => setColor(e.target.value)}
             >
@@ -145,7 +145,7 @@ export function DesignPicker({
 
             {availableCategories.length > 0 && (
               <select
-                className="input h-8 flex-1 min-w-28 text-xs"
+                className="input h-10 flex-1 min-w-28 py-0 pr-8 text-xs"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
               >
