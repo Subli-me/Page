@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import clsx from "clsx";
 import { Check, ChevronLeft, ChevronRight, MessageCircle, Shirt } from "lucide-react";
 import { ORDER_WHATSAPP_NUMBERS, whatsappLink } from "@/lib/contact";
+import { renderOrderPreview, uploadPreview } from "@/lib/order-preview";
 import type { DesignCatalogItem, PrintZone, Product, ProductColor, ProductSize } from "@/lib/types";
 import { type UploadedImage } from "./ImageUploader";
 import { DesignPicker } from "./DesignPicker";
@@ -51,6 +52,7 @@ export function OrderWizard({
   const [contact, setContact] = useState({ name: "", email: "", phone: "", notes: "" });
   const [status, setStatus] = useState<"idle" | "submitting" | "done" | "error">("idle");
   const [orderId, setOrderId] = useState<string | null>(null);
+  const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
 
   const product = products.find((p) => p.id === productId) ?? null;
   const productSizes = sizes.filter((s) => s.product_id === productId);
@@ -105,10 +107,60 @@ export function OrderWizard({
     setPrints((prev) => ({ ...prev, [activeZone]: { ...prev[activeZone], transform: t } }));
   }
 
+  /**
+   * Arma, para cada zona, la imagen de cómo quedó la prenda con el diseño
+   * puesto, y la sube. Es lo que se manda por WhatsApp: sin esto solo viaja el
+   * diseño suelto y hay que adivinar dónde y de qué tamaño va.
+   *
+   * Si algo falla se sigue igual — el pedido no se traba por la vista previa.
+   */
+  async function buildPreviews(): Promise<Record<string, string>> {
+    const previews: Record<string, string> = {};
+
+    await Promise.all(
+      addedZoneKeys.map(async (key) => {
+        const entry = prints[key];
+        if (!entry?.image) return;
+        try {
+          const res = await fetch("/api/mockup", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              productId: product!.id,
+              size,
+              color,
+              printZoneKey: key,
+              imageUrl: entry.image.url,
+            }),
+          });
+          const data = await res.json();
+          if (!data.available || !data.mockup?.baseImageUrl) return;
+
+          const blob = await renderOrderPreview({
+            garmentUrl: data.mockup.baseImageUrl,
+            colorHex: selectedColor?.hex,
+            overlay: data.mockup.overlay,
+            designUrl: entry.image.url,
+            transform: entry.transform,
+          });
+          if (!blob) return;
+
+          const url = await uploadPreview(blob);
+          if (url) previews[key] = url;
+        } catch {
+          // seguimos sin la composición de esta zona
+        }
+      })
+    );
+
+    return previews;
+  }
+
   async function submit() {
     if (!product || !allZonesHaveImage) return;
     setStatus("submitting");
     try {
+      setPreviewUrls(await buildPreviews());
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -149,9 +201,13 @@ export function OrderWizard({
       const zone = printZones.find((z) => z.key === k);
       const extra = Number(zone?.extra_price ?? 0);
       const url = prints[k].image?.url;
+      const preview = previewUrls[k];
       return [
-        `• ${zone?.label ?? k}${extra > 0 ? ` (+${money(extra)})` : ""}`,
-        url ? `  ${url}` : null,
+        `- ${zone?.label ?? k}${extra > 0 ? ` (+${money(extra)})` : ""}`,
+        // Primero cómo lo acomodó el cliente, después el archivo original para
+        // producir.
+        preview ? `  Así lo quiere: ${preview}` : null,
+        url ? `  Archivo: ${url}` : null,
       ]
         .filter(Boolean)
         .join("\n");
@@ -170,8 +226,10 @@ export function OrderWizard({
       `TOTAL: ${money(total)}`,
     ].filter(Boolean);
 
+    // Sin emojis a propósito: en algunos WhatsApp aparecen como rombos. Los
+    // asteriscos los muestra en negrita.
     const waMessage = [
-      `🧾 NUEVO PEDIDO${orderId ? ` #${orderId.slice(0, 8)}` : ""}`,
+      `*NUEVO PEDIDO${orderId ? ` #${orderId.slice(0, 8)}` : ""}*`,
       new Date().toLocaleString("es-AR", {
         day: "2-digit",
         month: "2-digit",
@@ -180,20 +238,20 @@ export function OrderWizard({
         minute: "2-digit",
       }),
       "",
-      "👕 PRENDA",
+      "*PRENDA*",
       `${product?.name ?? ""} — Talle ${size ?? ""}${color ? ` — ${color}` : ""}`,
       "",
-      `🎨 ESTAMPADO (${addedZoneKeys.length})`,
+      `*ESTAMPADO (${addedZoneKeys.length})*`,
       ...zoneBlocks,
       "",
-      "💰 PRECIO",
+      "*PRECIO*",
       ...priceLines,
       "",
-      "👤 CLIENTE",
+      "*CLIENTE*",
       contact.name,
       contact.email,
       contact.phone || null,
-      contact.notes ? `\n📝 NOTAS\n${contact.notes}` : null,
+      contact.notes ? `\n*NOTAS*\n${contact.notes}` : null,
     ]
       .filter((l) => l !== null)
       .join("\n");

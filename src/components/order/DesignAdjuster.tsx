@@ -3,6 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Move, RotateCw } from "lucide-react";
 
+/**
+ * Cómo quedó acomodado el diseño dentro de la zona de estampado.
+ *
+ * `tx`/`ty` salen como fracción del ancho y alto de la zona, no en píxeles: la
+ * vista previa se ve de distinto tamaño según la pantalla, y guardarlo en
+ * píxeles haría que la posición solo signifique algo en el tamaño exacto en que
+ * se arrastró. Normalizado, se puede reproducir en cualquier tamaño.
+ */
 export type DesignTransform = { tx: number; ty: number; scale: number; rotation: number };
 
 const DEFAULT_TRANSFORM: DesignTransform = { tx: 0, ty: 0, scale: 1, rotation: 0 };
@@ -19,8 +27,17 @@ export function DesignAdjuster({
   const frameRef = useRef<HTMLDivElement>(null);
   const [t, setT] = useState<DesignTransform>(DEFAULT_TRANSFORM);
 
+  // Hacia afuera reportamos el desplazamiento como fracción de la zona, para
+  // que la posición se pueda reproducir en cualquier tamaño (por ejemplo al
+  // componer la imagen final que se manda por WhatsApp).
   useEffect(() => {
-    onChange?.(t);
+    const rect = frameRef.current?.getBoundingClientRect();
+    onChange?.({
+      tx: rect?.width ? t.tx / rect.width : 0,
+      ty: rect?.height ? t.ty / rect.height : 0,
+      scale: t.scale,
+      rotation: t.rotation,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [t]);
   const dragRef = useRef<{
