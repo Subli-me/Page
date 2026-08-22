@@ -38,52 +38,6 @@ type State =
 
 const ZOOM_STEPS = [1, 1.5, 2, 2.5];
 
-function colorizeImage(imageUrl: string, hexColor: string): Promise<string> {
-  return new Promise((resolve) => {
-    const img = new window.Image();
-    img.crossOrigin = "anonymous";
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return resolve(imageUrl);
-
-      ctx.drawImage(img, 0, 0);
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const data = imageData.data;
-
-      const rgb = hexToRgb(hexColor);
-      if (!rgb) return resolve(imageUrl);
-
-      for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-        const a = data[i + 3];
-
-        const gray = (r + g + b) / 3;
-        const lightness = gray / 255;
-
-        data[i] = Math.round(rgb.r * lightness);
-        data[i + 1] = Math.round(rgb.g * lightness);
-        data[i + 2] = Math.round(rgb.b * lightness);
-        data[i + 3] = a;
-      }
-
-      ctx.putImageData(imageData, 0, 0);
-      resolve(canvas.toDataURL());
-    };
-    img.onerror = () => resolve(imageUrl);
-    img.src = imageUrl;
-  });
-}
-
-function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) } : null;
-}
-
 export function PreviewStage({
   productId,
   size,
@@ -130,16 +84,12 @@ export function PreviewStage({
       }),
     })
       .then((r) => r.json())
-      .then(async (data) => {
+      .then((data) => {
         if (requestId.current !== id) return;
         if (data.available && data.mockup) {
-          let baseImageUrl = data.mockup.baseImageUrl ?? null;
-          if (baseImageUrl && colorHex) {
-            baseImageUrl = await colorizeImage(baseImageUrl, colorHex);
-          }
           setState({
             kind: "composite",
-            baseImageUrl,
+            baseImageUrl: data.mockup.baseImageUrl ?? null,
             baseColor: data.mockup.baseColor ?? null,
             foregroundUrl: data.mockup.foregroundUrl ?? null,
             overlay: data.mockup.overlay,
@@ -154,7 +104,7 @@ export function PreviewStage({
       .catch(() => {
         if (requestId.current === id) setState({ kind: "error" });
       });
-  }, [productId, size, color, colorHex, effectiveZoneKey, imageUrl, printZoneKey, zoneLabel]);
+  }, [productId, size, color, effectiveZoneKey, imageUrl, printZoneKey, zoneLabel]);
 
   useEffect(() => {
     if (state.kind !== "composite" || !state.designUrl) onDesignTransformChange?.(null);
