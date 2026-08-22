@@ -7,7 +7,7 @@ const schema = z.object({
   productId: z.string().uuid(),
   print_zone_key: z.string().min(1),
   image_url: z.string().url(),
-  image_public_id: z.string(),
+  image_public_id: z.string().optional().default(""),
   overlay_x: z.number().int().min(0),
   overlay_y: z.number().int().min(0),
   overlay_w: z.number().int().min(1),

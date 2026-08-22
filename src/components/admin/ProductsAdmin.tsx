@@ -670,13 +670,13 @@ function ProductRow({
                 <p className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-soft">Mockups por Zona</p>
                 <div className="space-y-2">
                   {zones.map((zone) => {
-                    const mockup = mockups.find((m) => m.print_zone_key === zone.label);
+                    const mockup = mockups.find((m) => m.print_zone_key === zone.key);
                     return (
                       <div key={zone.id} className="flex items-center justify-between rounded-lg border border-line bg-panel px-3 py-2">
                         <span className="text-xs font-medium">{zone.label}</span>
                         <button
                           type="button"
-                          onClick={() => onEditMockup({ productId: product.id, zoneKey: zone.label })}
+                          onClick={() => onEditMockup({ productId: product.id, zoneKey: zone.key })}
                           className="inline-flex items-center gap-1.5 rounded-full bg-ink px-3 py-1 text-xs text-paper hover:bg-accent"
                         >
                           <Edit2 size={12} />
