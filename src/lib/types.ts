@@ -186,6 +186,7 @@ export type Order = {
   image_url: string | null;
   image_public_id: string | null;
   design_transform: { tx: number; ty: number; scale: number; rotation: number } | null;
+  quantity: number;
   customer_name: string;
   customer_email: string;
   customer_phone: string | null;

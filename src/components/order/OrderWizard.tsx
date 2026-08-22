@@ -1,11 +1,21 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import clsx from "clsx";
-import { Check, ChevronLeft, ChevronRight, MessageCircle, Shirt } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  MessageCircle,
+  Minus,
+  Plus,
+  RotateCcw,
+  Shirt,
+} from "lucide-react";
 import { ORDER_WHATSAPP_NUMBERS, whatsappLink } from "@/lib/contact";
 import { renderOrderPreview, uploadPreview } from "@/lib/order-preview";
 import type {
@@ -16,7 +26,9 @@ import type {
   ProductColor,
   ProductSize,
 } from "@/lib/types";
-import { comboExtraTotal, matchingCombos } from "@/lib/pricing";
+import { buildOrderBreakdown, matchingCombos } from "@/lib/pricing";
+import { clearDraft, loadDraft, saveDraft } from "@/lib/order-draft";
+import { PriceBreakdown } from "./PriceBreakdown";
 import { type UploadedImage } from "./ImageUploader";
 import { DesignPicker } from "./DesignPicker";
 import { PreviewStage } from "./PreviewStage";
@@ -62,6 +74,9 @@ export function OrderWizard({
   const [contact, setContact] = useState({ name: "", email: "", phone: "", notes: "" });
   const [status, setStatus] = useState<"idle" | "submitting" | "done" | "error">("idle");
   const [orderId, setOrderId] = useState<string | null>(null);
+  const [quantity, setQuantity] = useState(1);
+  const [restored, setRestored] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
   const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
 
   const product = products.find((p) => p.id === productId) ?? null;
@@ -77,16 +92,59 @@ export function OrderWizard({
     [addedZoneKeys, zoneCombos]
   );
 
-  const total = useMemo(() => {
-    if (!product) return 0;
-    const sizeDelta = productSizes.find((s) => s.size === size)?.price_delta ?? 0;
-    const extraTotal = addedZoneKeys.reduce((sum, key) => {
-      const zone = printZones.find((z) => z.key === key);
-      return sum + Number(zone?.extra_price ?? 0);
-    }, 0);
-    const comboTotal = comboExtraTotal(addedZoneKeys, zoneCombos);
-    return Number(product.base_price) + Number(sizeDelta) + extraTotal + comboTotal;
-  }, [product, productSizes, size, addedZoneKeys, printZones, zoneCombos]);
+  const breakdown = useMemo(
+    () =>
+      buildOrderBreakdown({
+        productName: product?.name ?? "Prenda",
+        basePrice: Number(product?.base_price ?? 0),
+        size,
+        sizeDelta: Number(productSizes.find((s) => s.size === size)?.price_delta ?? 0),
+        zones: printZones,
+        zoneKeys: addedZoneKeys,
+        combos: zoneCombos,
+        quantity,
+      }),
+    [product, productSizes, size, addedZoneKeys, printZones, zoneCombos, quantity]
+  );
+
+  const total = product ? breakdown.total : 0;
+
+  // Restaurar el pedido a medio armar. Solo una vez, al montar.
+  useEffect(() => {
+    const draft = loadDraft();
+    if (draft && products.some((p) => p.id === draft.productId)) {
+      setProductId(draft.productId);
+      setSize(draft.size);
+      setColor(draft.color);
+      setQuantity(draft.quantity || 1);
+      setPrints(draft.prints ?? {});
+      setActiveZone(draft.activeZone);
+      setContact(draft.contact);
+      setStep(draft.step);
+      setRestored(true);
+    }
+    setHydrated(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Guardar en cada cambio, salvo mientras se restaura o una vez enviado.
+  useEffect(() => {
+    if (!hydrated || status === "done") return;
+    saveDraft({ step, productId, size, color, quantity, prints, activeZone, contact });
+  }, [hydrated, status, step, productId, size, color, quantity, prints, activeZone, contact]);
+
+  function startOver() {
+    clearDraft();
+    setProductId(null);
+    setSize(null);
+    setColor(null);
+    setQuantity(1);
+    setPrints({});
+    setActiveZone(null);
+    setContact({ name: "", email: "", phone: "", notes: "" });
+    setStep(0);
+    setRestored(false);
+  }
 
   const allZonesHaveImage = addedZoneKeys.length > 0 && addedZoneKeys.every((k) => prints[k].image);
 
@@ -96,6 +154,28 @@ export function OrderWizard({
     allZonesHaveImage,
     contact.name.length > 1 && contact.email.includes("@"),
   ][step];
+
+  // Un botón apagado sin explicación deja al cliente sin saber qué falta. Acá
+  // decimos exactamente qué está esperando el sistema.
+  const zonesMissingImage = addedZoneKeys.filter((k) => !prints[k].image);
+  const missingLabel = zonesMissingImage
+    .map((k) => printZones.find((z) => z.key === k)?.label ?? k)
+    .join(", ");
+
+  const blockedReason = canNext
+    ? null
+    : [
+        "Elegí una prenda para seguir.",
+        !size
+          ? "Elegí un talle para seguir."
+          : "Elegí un color para seguir.",
+        addedZoneKeys.length === 0
+          ? "Agregá al menos una zona de estampado y subí tu diseño."
+          : `Falta subir la imagen de ${missingLabel}.`,
+        contact.name.length <= 1
+          ? "Escribí tu nombre para poder confirmar."
+          : "Escribí un email válido para poder confirmar.",
+      ][step];
 
   function addZone(key: string) {
     setPrints((prev) => (prev[key] ? prev : { ...prev, [key]: { image: null, transform: null } }));
@@ -186,6 +266,7 @@ export function OrderWizard({
           productId: product.id,
           size,
           color,
+          quantity,
           prints: addedZoneKeys.map((key) => ({
             printZoneKey: key,
             imageUrl: prints[key].image!.url,
@@ -201,6 +282,8 @@ export function OrderWizard({
       if (!res.ok) throw new Error();
       const json = await res.json();
       setOrderId(json.order?.id ?? null);
+      // El pedido ya está guardado: el borrador no tiene más razón de existir.
+      clearDraft();
       setStatus("done");
     } catch {
       setStatus("error");
@@ -231,23 +314,14 @@ export function OrderWizard({
         .join("\n");
     });
 
+    // Los mismos renglones que ve el cliente en el resumen.
     const priceLines = [
-      `${product?.name ?? "Prenda"}: ${money(product?.base_price ?? 0)}`,
-      sizeDelta > 0 ? `Talle ${size}: +${money(sizeDelta)}` : null,
-      ...addedZoneKeys
-        .map((k) => {
-          const zone = printZones.find((z) => z.key === k);
-          const extra = Number(zone?.extra_price ?? 0);
-          return extra > 0 ? `${zone?.label ?? k}: +${money(extra)}` : null;
-        })
-        .filter(Boolean),
-      ...activeCombos.map((c) => {
-        const a = printZones.find((z) => z.key === c.zone_a_key)?.label ?? c.zone_a_key;
-        const b = printZones.find((z) => z.key === c.zone_b_key)?.label ?? c.zone_b_key;
-        return `${a} + ${b}: +${money(c.extra_price)}`;
-      }),
-      `TOTAL: ${money(total)}`,
-    ].filter(Boolean);
+      ...breakdown.lines.map((l, i) => `${l.label}: ${i === 0 ? "" : "+"}${money(l.amount)}`),
+      ...(breakdown.quantity > 1
+        ? [`Por prenda: ${money(breakdown.unitTotal)}`, `Cantidad: x${breakdown.quantity}`]
+        : []),
+      `TOTAL: ${money(breakdown.total)}`,
+    ];
 
     // Sin emojis a propósito: en algunos WhatsApp aparecen como rombos. Los
     // asteriscos los muestra en negrita.
@@ -263,6 +337,7 @@ export function OrderWizard({
       "",
       "*PRENDA*",
       `${product?.name ?? ""} — Talle ${size ?? ""}${color ? ` — ${color}` : ""}`,
+      quantity > 1 ? `Cantidad: ${quantity} unidades` : null,
       "",
       `*ESTAMPADO (${addedZoneKeys.length})*`,
       ...zoneBlocks,
@@ -319,6 +394,23 @@ export function OrderWizard({
 
   return (
     <div>
+      {/* Volver y encontrar todo cargado sin aviso desconcierta: conviene decir
+          qué pasó y dar salida para empezar de cero. */}
+      {restored && (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-panel px-4 py-3">
+          <p className="text-sm text-ink-soft">
+            Retomamos tu pedido donde lo habías dejado.
+          </p>
+          <button
+            type="button"
+            onClick={startOver}
+            className="inline-flex items-center gap-1.5 text-sm text-ink-soft underline underline-offset-2 hover:text-ink"
+          >
+            <RotateCcw size={13} /> Empezar de nuevo
+          </button>
+        </div>
+      )}
+
       {/* Stepper */}
       <div className="mb-10 flex items-center gap-2">
         {STEPS.map((label, i) => (
@@ -435,6 +527,50 @@ export function OrderWizard({
                   </div>
                 </div>
               )}
+
+              <div>
+                <p className="mb-1 text-sm font-medium">Cantidad</p>
+                <p className="mb-3 text-xs text-ink-soft">
+                  Todas con el mismo talle, color y diseño.
+                </p>
+                <div className="inline-flex items-center gap-1 rounded-full border border-line p-1">
+                  <button
+                    type="button"
+                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                    disabled={quantity <= 1}
+                    aria-label="Quitar una prenda"
+                    className="flex h-9 w-9 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-panel hover:text-ink disabled:opacity-30"
+                  >
+                    <Minus size={15} />
+                  </button>
+                  <input
+                    type="number"
+                    min={1}
+                    max={500}
+                    value={quantity}
+                    onChange={(e) =>
+                      setQuantity(Math.min(500, Math.max(1, Number(e.target.value) || 1)))
+                    }
+                    aria-label="Cantidad de prendas"
+                    className="w-14 border-0 bg-transparent text-center text-sm tabular-nums outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setQuantity((q) => Math.min(500, q + 1))}
+                    disabled={quantity >= 500}
+                    aria-label="Agregar una prenda"
+                    className="flex h-9 w-9 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-panel hover:text-ink disabled:opacity-30"
+                  >
+                    <Plus size={15} />
+                  </button>
+                </div>
+                {quantity > 1 && (
+                  <p className="mt-2 text-xs text-ink-soft">
+                    ¿Necesitás talles o colores distintos? Escribinos y lo
+                    armamos a medida.
+                  </p>
+                )}
+              </div>
             </div>
           )}
 
@@ -509,7 +645,52 @@ export function OrderWizard({
           )}
 
           {step === 3 && (
-            <div className="grid gap-4 sm:grid-cols-2">
+            <>
+              {/* Antes se confirmaba a ciegas: el paso era solo el formulario y
+                  el cliente no volvía a ver qué estaba comprando. */}
+              <div className="mb-8 rounded-2xl border border-line bg-paper p-5">
+                <p className="mb-4 text-sm font-medium">Tu pedido</p>
+
+                <div className="grid gap-6 sm:grid-cols-[1fr_auto]">
+                  <div>
+                    <p className="text-sm">
+                      <strong>{product?.name}</strong> — Talle {size}
+                      {color ? ` — ${color}` : ""}
+                      {quantity > 1 ? ` — ${quantity} unidades` : ""}
+                    </p>
+
+                    <div className="mt-3 flex flex-wrap gap-3">
+                      {addedZoneKeys.map((key) => {
+                        const zone = printZones.find((z) => z.key === key);
+                        const img = prints[key].image;
+                        return (
+                          <div key={key} className="w-20">
+                            <div className="relative aspect-square overflow-hidden rounded-lg border border-line bg-panel">
+                              {img && (
+                                <Image
+                                  src={img.url}
+                                  alt={zone?.label ?? key}
+                                  fill
+                                  className="object-contain p-1.5"
+                                />
+                              )}
+                            </div>
+                            <p className="mt-1 truncate text-center text-[11px] text-ink-soft">
+                              {zone?.label ?? key}
+                            </p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="sm:w-56">
+                    <PriceBreakdown breakdown={breakdown} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Nombre">
                 <input
                   className="input"
@@ -539,13 +720,14 @@ export function OrderWizard({
                   onChange={(e) => setContact({ ...contact, notes: e.target.value })}
                 />
               </Field>
-            </div>
+              </div>
+            </>
           )}
         </motion.div>
       </AnimatePresence>
 
       {/* Footer: total + nav */}
-      <div className="mt-6 flex items-center justify-between">
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           {step > 0 ? (
             <button
@@ -558,11 +740,23 @@ export function OrderWizard({
           ) : <span />}
         </div>
 
-        <div className="flex items-center gap-6">
+        <div className="flex flex-wrap items-center justify-end gap-x-6 gap-y-3">
           {product && (
-            <span className="text-sm text-ink-soft">
-              Total: <strong className="text-ink">${total.toLocaleString("es-AR")}</strong>
-            </span>
+            // El total solo se vuelve creíble si se puede abrir y ver de dónde
+            // sale cada peso.
+            <details className="group relative text-sm text-ink-soft">
+              <summary className="flex cursor-pointer list-none items-center gap-1.5">
+                Total:{" "}
+                <strong className="text-ink">${total.toLocaleString("es-AR")}</strong>
+                <ChevronDown
+                  size={14}
+                  className="transition-transform group-open:rotate-180"
+                />
+              </summary>
+              <div className="absolute bottom-full right-0 z-20 mb-2 w-64 rounded-xl border border-line bg-panel p-4 shadow-lg">
+                <PriceBreakdown breakdown={breakdown} />
+              </div>
+            </details>
           )}
           {step < STEPS.length - 1 ? (
             <button
@@ -585,6 +779,10 @@ export function OrderWizard({
           )}
         </div>
       </div>
+      {blockedReason && (
+        <p className="mt-3 text-right text-sm text-ink-soft">{blockedReason}</p>
+      )}
+
       {status === "error" && (
         <p className="mt-3 text-right text-sm text-accent">
           Hubo un error al enviar el pedido. Probá de nuevo.

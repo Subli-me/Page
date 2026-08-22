@@ -120,6 +120,11 @@ export function OrderRow({ order }: { order: OrderWithProduct }) {
           <p className="mt-1 font-medium">
             {order.products?.name ?? "Producto"} — Talle {order.size}
             {order.color ? ` — ${order.color}` : ""}
+            {(order.quantity ?? 1) > 1 && (
+              <span className="ml-2 rounded-full bg-accent-soft px-2 py-0.5 text-xs text-accent">
+                × {order.quantity} unidades
+              </span>
+            )}
           </p>
           <p className="text-sm text-ink-soft">
             {order.customer_name} · {order.customer_email}
@@ -177,6 +182,7 @@ export function OrderRow({ order }: { order: OrderWithProduct }) {
                 />
                 <Detail label="Prenda" value={order.products?.name ?? "—"} />
                 <Detail label="Talle" value={order.size} />
+                <Detail label="Cantidad" value={`${order.quantity ?? 1}`} />
                 {order.color && <Detail label="Color" value={order.color} />}
                 <Detail
                   label="Total"

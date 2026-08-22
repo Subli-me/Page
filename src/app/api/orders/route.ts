@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { Resend } from "resend";
 import { createServiceClient } from "@/lib/supabase/server";
-import { comboExtraTotal } from "@/lib/pricing";
+import { buildOrderBreakdown } from "@/lib/pricing";
 
 const printSchema = z.object({
   printZoneKey: z.string().min(1),
@@ -18,6 +18,7 @@ const orderSchema = z.object({
   productId: z.string().uuid(),
   size: z.string().min(1),
   color: z.string().optional().nullable(),
+  quantity: z.number().int().min(1).max(500).default(1),
   prints: z.array(printSchema).min(1),
   customerName: z.string().min(2),
   customerEmail: z.string().email(),
@@ -57,18 +58,20 @@ export async function POST(req: Request) {
     .eq("size", data.size)
     .maybeSingle();
 
-  const extraTotal = zones.reduce((sum, z) => sum + Number(z.extra_price), 0);
-
-  // Recargos por combinación de zonas (ej: pecho + espalda). El precio lo
-  // decide el servidor, no lo que haya calculado el navegador.
+  // El precio lo decide el servidor con la misma función que usa el navegador
+  // para mostrarlo, no lo que haya calculado el cliente.
   const { data: combos } = await supabase.from("print_zone_combos").select("*");
-  const comboTotal = comboExtraTotal(zoneKeys, combos ?? []);
 
-  const totalPrice =
-    Number(product.base_price) +
-    extraTotal +
-    comboTotal +
-    Number(sizeDelta.data?.price_delta ?? 0);
+  const { total: totalPrice } = buildOrderBreakdown({
+    productName: product.name,
+    basePrice: Number(product.base_price),
+    size: data.size,
+    sizeDelta: Number(sizeDelta.data?.price_delta ?? 0),
+    zones,
+    zoneKeys,
+    combos: combos ?? [],
+    quantity: data.quantity,
+  });
 
   const { data: order, error } = await supabase
     .from("orders")
@@ -76,6 +79,7 @@ export async function POST(req: Request) {
       product_id: data.productId,
       size: data.size,
       color: data.color ?? null,
+      quantity: data.quantity,
       customer_name: data.customerName,
       customer_email: data.customerEmail,
       customer_phone: data.customerPhone ?? null,
