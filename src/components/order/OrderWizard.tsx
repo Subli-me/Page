@@ -53,6 +53,7 @@ export function OrderWizard({
   const product = products.find((p) => p.id === productId) ?? null;
   const productSizes = sizes.filter((s) => s.product_id === productId);
   const productColors = colors.filter((c) => c.product_id === productId);
+  const selectedColor = color ? productColors.find((c) => c.id === color) : null;
   const addedZoneKeys = Object.keys(prints);
 
   const total = useMemo(() => {
@@ -294,6 +295,7 @@ export function OrderWizard({
                       productId={product.id}
                       size={size}
                       color={color}
+                      colorHex={selectedColor?.hex}
                       printZoneKey={activeZone}
                       defaultZoneKey={activeZone}
                       zoneLabel={activeZoneLabel}
