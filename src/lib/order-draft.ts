@@ -13,7 +13,7 @@
 const KEY = "sublime:pedido-borrador";
 
 /** Si cambia la forma de lo guardado, subir esto descarta los borradores viejos. */
-const VERSION = 1;
+const VERSION = 2;
 
 /** Pasado este tiempo el borrador se considera abandonado. */
 const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
@@ -35,12 +35,28 @@ export type OrderDraft = {
   >;
   activeZone: string | null;
   contact: { name: string; email: string; phone: string; notes: string };
+  /** Las prendas ya agregadas al pedido. */
+  lines: {
+    id: string;
+    productId: string;
+    size: string;
+    color: string | null;
+    quantity: number;
+    prints: Record<
+      string,
+      {
+        image: { url: string; publicId: string } | null;
+        transform: { tx: number; ty: number; scale: number; rotation: number } | null;
+      }
+    >;
+  }[];
+  editingLineId: string | null;
 };
 
 export function saveDraft(draft: Omit<OrderDraft, "version" | "savedAt">) {
   try {
-    // Un borrador sin prenda elegida no aporta nada al volver.
-    if (!draft.productId) return clearDraft();
+    // Un borrador vacío no aporta nada al volver.
+    if (!draft.productId && draft.lines.length === 0) return clearDraft();
     localStorage.setItem(
       KEY,
       JSON.stringify({ ...draft, version: VERSION, savedAt: Date.now() })
@@ -58,7 +74,7 @@ export function loadDraft(): OrderDraft | null {
     const draft = JSON.parse(raw) as OrderDraft;
     if (draft.version !== VERSION) return clearDraft(), null;
     if (Date.now() - draft.savedAt > MAX_AGE_MS) return clearDraft(), null;
-    if (!draft.productId) return null;
+    if (!draft.productId && !draft.lines?.length) return null;
 
     return draft;
   } catch {

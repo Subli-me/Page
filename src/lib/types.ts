@@ -165,9 +165,23 @@ export type SiteSettings = {
   footer_copyright_suffix: string;
 };
 
+export type OrderLine = {
+  id: string;
+  order_id: string;
+  product_id: string | null;
+  size: string;
+  color: string | null;
+  quantity: number;
+  /** Precio con el que se cerró el pedido, congelado por si cambia la lista. */
+  unit_price: number;
+  line_total: number;
+  sort_order: number;
+};
+
 export type OrderItem = {
   id: string;
   order_id: string;
+  order_line_id: string | null;
   print_zone_key: string;
   image_url: string;
   image_public_id: string;

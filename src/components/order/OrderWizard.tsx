@@ -8,6 +8,7 @@ import clsx from "clsx";
 import {
   Check,
   ChevronDown,
+  Copy,
   ChevronLeft,
   ChevronRight,
   MessageCircle,
@@ -15,6 +16,7 @@ import {
   Plus,
   RotateCcw,
   Shirt,
+  Trash2,
 } from "lucide-react";
 import { ORDER_WHATSAPP_NUMBERS, whatsappLink } from "@/lib/contact";
 import { renderOrderPreview, uploadPreview } from "@/lib/order-preview";
@@ -37,9 +39,24 @@ import { ZoneSelector } from "./ZoneSelector";
 import { SizeGuideModal } from "./SizeGuideModal";
 import { MediaDisplay } from "@/components/MediaDisplay";
 
-const STEPS = ["Prenda", "Talle y color", "Diseño", "Tus datos"] as const;
+const STEPS = ["Prenda", "Talle y color", "Diseño", "Tu pedido", "Tus datos"] as const;
 
 type PrintEntry = { image: UploadedImage | null; transform: DesignTransform | null };
+
+/** Una prenda ya agregada al pedido, con sus estampados. */
+type CartLine = {
+  id: string;
+  productId: string;
+  size: string;
+  color: string | null;
+  quantity: number;
+  prints: Record<string, PrintEntry>;
+};
+
+const newId = () =>
+  typeof crypto !== "undefined" && crypto.randomUUID
+    ? crypto.randomUUID()
+    : String(Date.now() + Math.random());
 
 export function OrderWizard({
   products,
@@ -78,6 +95,8 @@ export function OrderWizard({
   const [restored, setRestored] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
+  const [lines, setLines] = useState<CartLine[]>([]);
+  const [editingLineId, setEditingLineId] = useState<string | null>(null);
 
   const product = products.find((p) => p.id === productId) ?? null;
   const productSizes = sizes.filter((s) => s.product_id === productId);
@@ -109,10 +128,91 @@ export function OrderWizard({
 
   const total = product ? breakdown.total : 0;
 
+  /** Precio de una prenda ya agregada, con la misma cuenta que usa el servidor. */
+  const lineBreakdown = (l: CartLine) =>
+    buildOrderBreakdown({
+      productName: products.find((p) => p.id === l.productId)?.name ?? "Prenda",
+      basePrice: Number(products.find((p) => p.id === l.productId)?.base_price ?? 0),
+      size: l.size,
+      sizeDelta: Number(
+        sizes.find((s) => s.product_id === l.productId && s.size === l.size)?.price_delta ?? 0
+      ),
+      zones: printZones,
+      zoneKeys: Object.keys(l.prints),
+      combos: zoneCombos,
+      quantity: l.quantity,
+    });
+
+  const cartTotal = lines.reduce((sum, l) => sum + lineBreakdown(l).total, 0);
+  const cartUnits = lines.reduce((sum, l) => sum + l.quantity, 0);
+
+  /** Deja la configuración en blanco, conservando lo ya agregado al pedido. */
+  function resetCurrent() {
+    setProductId(null);
+    setSize(null);
+    setColor(null);
+    setQuantity(1);
+    setPrints({});
+    setActiveZone(null);
+    setEditingLineId(null);
+  }
+
+  /** Pasa la prenda que se está armando al pedido. */
+  function addCurrentToCart() {
+    if (!productId || !size) return;
+    const line: CartLine = {
+      id: editingLineId ?? newId(),
+      productId,
+      size,
+      color,
+      quantity,
+      prints,
+    };
+    setLines((prev) =>
+      editingLineId ? prev.map((l) => (l.id === editingLineId ? line : l)) : [...prev, line]
+    );
+    resetCurrent();
+    setStep(3);
+  }
+
+  /** Vuelve a abrir una prenda del pedido para modificarla. */
+  function editLine(id: string) {
+    const line = lines.find((l) => l.id === id);
+    if (!line) return;
+    setProductId(line.productId);
+    setSize(line.size);
+    setColor(line.color);
+    setQuantity(line.quantity);
+    setPrints(line.prints);
+    setActiveZone(Object.keys(line.prints)[0] ?? null);
+    setEditingLineId(id);
+    setStep(0);
+  }
+
+  /**
+   * Repetir una prenda cambiando solo el talle es el caso más común de un
+   * pedido de equipo, y sin esto había que volver a subir y reacomodar todo.
+   */
+  function duplicateLine(id: string) {
+    const line = lines.find((l) => l.id === id);
+    if (!line) return;
+    setLines((prev) => [...prev, { ...line, id: newId() }]);
+  }
+
+  function removeLine(id: string) {
+    setLines((prev) => prev.filter((l) => l.id !== id));
+  }
+
+  function setLineQuantity(id: string, q: number) {
+    setLines((prev) =>
+      prev.map((l) => (l.id === id ? { ...l, quantity: Math.min(500, Math.max(1, q)) } : l))
+    );
+  }
+
   // Restaurar el pedido a medio armar. Solo una vez, al montar.
   useEffect(() => {
     const draft = loadDraft();
-    if (draft && products.some((p) => p.id === draft.productId)) {
+    if (draft && (draft.lines?.length || products.some((p) => p.id === draft.productId))) {
       setProductId(draft.productId);
       setSize(draft.size);
       setColor(draft.color);
@@ -120,6 +220,8 @@ export function OrderWizard({
       setPrints(draft.prints ?? {});
       setActiveZone(draft.activeZone);
       setContact(draft.contact);
+      setLines(draft.lines ?? []);
+      setEditingLineId(draft.editingLineId ?? null);
       setStep(draft.step);
       setRestored(true);
     }
@@ -130,17 +232,13 @@ export function OrderWizard({
   // Guardar en cada cambio, salvo mientras se restaura o una vez enviado.
   useEffect(() => {
     if (!hydrated || status === "done") return;
-    saveDraft({ step, productId, size, color, quantity, prints, activeZone, contact });
+    saveDraft({ step, productId, size, color, quantity, prints, activeZone, contact, lines, editingLineId });
   }, [hydrated, status, step, productId, size, color, quantity, prints, activeZone, contact]);
 
   function startOver() {
     clearDraft();
-    setProductId(null);
-    setSize(null);
-    setColor(null);
-    setQuantity(1);
-    setPrints({});
-    setActiveZone(null);
+    resetCurrent();
+    setLines([]);
     setContact({ name: "", email: "", phone: "", notes: "" });
     setStep(0);
     setRestored(false);
@@ -152,6 +250,7 @@ export function OrderWizard({
     !!productId,
     !!size && (productColors.length === 0 || !!color),
     allZonesHaveImage,
+    lines.length > 0,
     contact.name.length > 1 && contact.email.includes("@"),
   ][step];
 
@@ -172,6 +271,7 @@ export function OrderWizard({
         addedZoneKeys.length === 0
           ? "Agregá al menos una zona de estampado y subí tu diseño."
           : `Falta subir la imagen de ${missingLabel}.`,
+        "Agregá al menos una prenda al pedido.",
         contact.name.length <= 1
           ? "Escribí tu nombre para poder confirmar."
           : "Escribí un email válido para poder confirmar.",
@@ -206,56 +306,61 @@ export function OrderWizard({
   }
 
   /**
-   * Arma, para cada zona, la imagen de cómo quedó la prenda con el diseño
+   * Arma, para cada prenda y cada zona, la imagen de como quedo con el diseno
    * puesto, y la sube. Es lo que se manda por WhatsApp: sin esto solo viaja el
-   * diseño suelto y hay que adivinar dónde y de qué tamaño va.
+   * diseno suelto y hay que adivinar donde y de que tamano va.
    *
-   * Si algo falla se sigue igual — el pedido no se traba por la vista previa.
+   * Si algo falla se sigue igual: el pedido no se traba por la vista previa.
    */
   async function buildPreviews(): Promise<Record<string, string>> {
     const previews: Record<string, string> = {};
 
     await Promise.all(
-      addedZoneKeys.map(async (key) => {
-        const entry = prints[key];
-        if (!entry?.image) return;
-        try {
-          const res = await fetch("/api/mockup", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              productId: product!.id,
-              size,
-              color,
-              printZoneKey: key,
-              imageUrl: entry.image.url,
-            }),
-          });
-          const data = await res.json();
-          if (!data.available || !data.mockup?.baseImageUrl) return;
+      lines.flatMap((line) =>
+        Object.entries(line.prints).map(async ([key, entry]) => {
+          if (!entry.image) return;
+          try {
+            const res = await fetch("/api/mockup", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                productId: line.productId,
+                size: line.size,
+                color: line.color,
+                printZoneKey: key,
+                imageUrl: entry.image.url,
+              }),
+            });
+            const data = await res.json();
+            if (!data.available || !data.mockup?.baseImageUrl) return;
 
-          const blob = await renderOrderPreview({
-            garmentUrl: data.mockup.baseImageUrl,
-            colorHex: selectedColor?.hex,
-            overlay: data.mockup.overlay,
-            designUrl: entry.image.url,
-            transform: entry.transform,
-          });
-          if (!blob) return;
+            const hex = colors.find(
+              (c) => c.product_id === line.productId && c.name === line.color
+            )?.hex;
 
-          const url = await uploadPreview(blob);
-          if (url) previews[key] = url;
-        } catch {
-          // seguimos sin la composición de esta zona
-        }
-      })
+            const blob = await renderOrderPreview({
+              garmentUrl: data.mockup.baseImageUrl,
+              colorHex: hex,
+              overlay: data.mockup.overlay,
+              designUrl: entry.image.url,
+              transform: entry.transform,
+            });
+            if (!blob) return;
+
+            const url = await uploadPreview(blob);
+            if (url) previews[`${line.id}:${key}`] = url;
+          } catch {
+            // seguimos sin la composicion de esta zona
+          }
+        })
+      )
     );
 
     return previews;
   }
 
   async function submit() {
-    if (!product || !allZonesHaveImage) return;
+    if (lines.length === 0) return;
     setStatus("submitting");
     try {
       setPreviewUrls(await buildPreviews());
@@ -263,15 +368,17 @@ export function OrderWizard({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          productId: product.id,
-          size,
-          color,
-          quantity,
-          prints: addedZoneKeys.map((key) => ({
-            printZoneKey: key,
-            imageUrl: prints[key].image!.url,
-            imagePublicId: prints[key].image!.publicId,
-            designTransform: prints[key].transform,
+          lines: lines.map((l) => ({
+            productId: l.productId,
+            size: l.size,
+            color: l.color,
+            quantity: l.quantity,
+            prints: Object.entries(l.prints).map(([key, entry]) => ({
+              printZoneKey: key,
+              imageUrl: entry.image!.url,
+              imagePublicId: entry.image!.publicId,
+              designTransform: entry.transform,
+            })),
           })),
           customerName: contact.name,
           customerEmail: contact.email,
@@ -282,7 +389,7 @@ export function OrderWizard({
       if (!res.ok) throw new Error();
       const json = await res.json();
       setOrderId(json.order?.id ?? null);
-      // El pedido ya está guardado: el borrador no tiene más razón de existir.
+      // El pedido ya esta guardado: el borrador no tiene mas razon de existir.
       clearDraft();
       setStatus("done");
     } catch {
@@ -291,42 +398,39 @@ export function OrderWizard({
   }
 
   if (status === "done") {
-    // El pedido ya quedó guardado; esto es para que nos llegue el aviso al
+    // El pedido ya quedo guardado; esto es para que nos llegue el aviso al
     // celular con todo lo necesario para producirlo sin abrir el panel.
-    const money = (n: number) => `$${Number(n).toLocaleString("es-AR")}`;
-    const sizeDelta = Number(productSizes.find((s) => s.size === size)?.price_delta ?? 0);
+    const money = (n: number) => "$" + Number(n).toLocaleString("es-AR");
 
-    // Cada zona con su imagen y su adicional, para no tener que adivinar qué
-    // diseño va en qué parte de la prenda.
-    const zoneBlocks = addedZoneKeys.map((k) => {
-      const zone = printZones.find((z) => z.key === k);
-      const extra = Number(zone?.extra_price ?? 0);
-      const url = prints[k].image?.url;
-      const preview = previewUrls[k];
+    const bloques = lines.flatMap((l, i) => {
+      const lb = lineBreakdown(l);
+      const nombre = products.find((p) => p.id === l.productId)?.name ?? "";
+
+      const zonas = Object.entries(l.prints).flatMap(([key, entry]) => {
+        const zona = printZones.find((z) => z.key === key);
+        const extra = Number(zona?.extra_price ?? 0);
+        const preview = previewUrls[l.id + ":" + key];
+        return [
+          "  - " + (zona?.label ?? key) + (extra > 0 ? " (+" + money(extra) + ")" : ""),
+          // Primero como lo acomodo el cliente, despues el archivo original.
+          preview ? "    Asi lo quiere: " + preview : null,
+          entry.image ? "    Archivo: " + entry.image.url : null,
+        ].filter((x) => x !== null);
+      });
+
       return [
-        `- ${zone?.label ?? k}${extra > 0 ? ` (+${money(extra)})` : ""}`,
-        // Primero cómo lo acomodó el cliente, después el archivo original para
-        // producir.
-        preview ? `  Así lo quiere: ${preview}` : null,
-        url ? `  Archivo: ${url}` : null,
-      ]
-        .filter(Boolean)
-        .join("\n");
+        "*" + (i + 1) + ". " + nombre + "*",
+        "Talle " + l.size + (l.color ? " - " + l.color : "") + " - x" + l.quantity,
+        ...zonas,
+        "  Subtotal: " + money(lb.total),
+        "",
+      ];
     });
 
-    // Los mismos renglones que ve el cliente en el resumen.
-    const priceLines = [
-      ...breakdown.lines.map((l, i) => `${l.label}: ${i === 0 ? "" : "+"}${money(l.amount)}`),
-      ...(breakdown.quantity > 1
-        ? [`Por prenda: ${money(breakdown.unitTotal)}`, `Cantidad: x${breakdown.quantity}`]
-        : []),
-      `TOTAL: ${money(breakdown.total)}`,
-    ];
-
-    // Sin emojis a propósito: en algunos WhatsApp aparecen como rombos. Los
+    // Sin emojis a proposito: en algunos WhatsApp aparecen como rombos. Los
     // asteriscos los muestra en negrita.
     const waMessage = [
-      `*NUEVO PEDIDO${orderId ? ` #${orderId.slice(0, 8)}` : ""}*`,
+      "*NUEVO PEDIDO" + (orderId ? " #" + orderId.slice(0, 8) : "") + "*",
       new Date().toLocaleString("es-AR", {
         day: "2-digit",
         month: "2-digit",
@@ -335,21 +439,15 @@ export function OrderWizard({
         minute: "2-digit",
       }),
       "",
-      "*PRENDA*",
-      `${product?.name ?? ""} — Talle ${size ?? ""}${color ? ` — ${color}` : ""}`,
-      quantity > 1 ? `Cantidad: ${quantity} unidades` : null,
-      "",
-      `*ESTAMPADO (${addedZoneKeys.length})*`,
-      ...zoneBlocks,
-      "",
-      "*PRECIO*",
-      ...priceLines,
+      "*PRENDAS (" + lines.length + ")*",
+      ...bloques,
+      "*TOTAL: " + money(cartTotal) + "*",
       "",
       "*CLIENTE*",
       contact.name,
       contact.email,
       contact.phone || null,
-      contact.notes ? `\n*NOTAS*\n${contact.notes}` : null,
+      contact.notes ? "\n*NOTAS*\n" + contact.notes : null,
     ]
       .filter((l) => l !== null)
       .join("\n");
@@ -645,48 +743,162 @@ export function OrderWizard({
           )}
 
           {step === 3 && (
+            <div>
+              <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+                <p className="text-sm font-medium">
+                  {lines.length} prenda{lines.length !== 1 ? "s" : ""} en tu pedido
+                  {cartUnits !== lines.length && (
+                    <span className="text-ink-soft"> &middot; {cartUnits} unidades</span>
+                  )}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetCurrent();
+                    setStep(0);
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-line px-4 py-2 text-sm hover:border-ink"
+                >
+                  <Plus size={14} /> Agregar otra prenda
+                </button>
+              </div>
+
+              {lines.length === 0 ? (
+                <p className="rounded-xl border border-dashed border-line px-6 py-14 text-center text-sm text-ink-soft">
+                  Todavia no agregaste ninguna prenda.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {lines.map((l) => {
+                    const lProduct = products.find((p) => p.id === l.productId);
+                    const lb = lineBreakdown(l);
+                    return (
+                      <div
+                        key={l.id}
+                        className="flex flex-wrap items-center gap-4 rounded-xl border border-line bg-paper p-4"
+                      >
+                        <div className="flex gap-2">
+                          {Object.entries(l.prints).map(([key, entry]) => (
+                            <div key={key} className="w-14">
+                              <div className="relative aspect-square overflow-hidden rounded-lg border border-line bg-panel">
+                                {entry.image && (
+                                  <Image
+                                    src={entry.image.url}
+                                    alt={key}
+                                    fill
+                                    className="object-contain p-1"
+                                  />
+                                )}
+                              </div>
+                              <p className="mt-0.5 truncate text-center text-[10px] text-ink-soft">
+                                {printZones.find((z) => z.key === key)?.label ?? key}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium">{lProduct?.name}</p>
+                          <p className="text-xs text-ink-soft">
+                            Talle {l.size}
+                            {l.color ? " \u00b7 " + l.color : ""} \u00b7 $
+                            {lb.unitTotal.toLocaleString("es-AR")} c/u
+                          </p>
+
+                          <div className="mt-2 flex flex-wrap items-center gap-3">
+                            <div className="inline-flex items-center gap-1 rounded-full border border-line">
+                              <button
+                                type="button"
+                                onClick={() => setLineQuantity(l.id, l.quantity - 1)}
+                                disabled={l.quantity <= 1}
+                                aria-label="Quitar una"
+                                className="flex h-7 w-7 items-center justify-center rounded-full text-ink-soft hover:text-ink disabled:opacity-30"
+                              >
+                                <Minus size={13} />
+                              </button>
+                              <span className="w-6 text-center text-xs tabular-nums">
+                                {l.quantity}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => setLineQuantity(l.id, l.quantity + 1)}
+                                aria-label="Agregar una"
+                                className="flex h-7 w-7 items-center justify-center rounded-full text-ink-soft hover:text-ink"
+                              >
+                                <Plus size={13} />
+                              </button>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => editLine(l.id)}
+                              className="text-xs text-ink-soft underline underline-offset-2 hover:text-ink"
+                            >
+                              Editar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => duplicateLine(l.id)}
+                              title="Util para repetir la prenda en otro talle"
+                              className="inline-flex items-center gap-1 text-xs text-ink-soft underline underline-offset-2 hover:text-ink"
+                            >
+                              <Copy size={12} /> Duplicar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removeLine(l.id)}
+                              className="inline-flex items-center gap-1 text-xs text-ink-soft hover:text-accent"
+                            >
+                              <Trash2 size={12} /> Quitar
+                            </button>
+                          </div>
+                        </div>
+
+                        <p className="font-display text-lg tabular-nums">
+                          ${lb.total.toLocaleString("es-AR")}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {step === 4 && (
             <>
               {/* Antes se confirmaba a ciegas: el paso era solo el formulario y
-                  el cliente no volvía a ver qué estaba comprando. */}
+                  el cliente no volvia a ver que estaba comprando. */}
               <div className="mb-8 rounded-2xl border border-line bg-paper p-5">
                 <p className="mb-4 text-sm font-medium">Tu pedido</p>
 
-                <div className="grid gap-6 sm:grid-cols-[1fr_auto]">
-                  <div>
-                    <p className="text-sm">
-                      <strong>{product?.name}</strong> — Talle {size}
-                      {color ? ` — ${color}` : ""}
-                      {quantity > 1 ? ` — ${quantity} unidades` : ""}
-                    </p>
+                <div className="space-y-2">
+                  {lines.map((l) => {
+                    const lb = lineBreakdown(l);
+                    const zonas = Object.keys(l.prints)
+                      .map((k) => printZones.find((z) => z.key === k)?.label ?? k)
+                      .join(", ");
+                    return (
+                      <div key={l.id} className="flex justify-between gap-4 text-sm">
+                        <span className="text-ink-soft">
+                          {products.find((p) => p.id === l.productId)?.name} &middot; Talle {l.size}
+                          {l.color ? " \u00b7 " + l.color : ""}
+                          {l.quantity > 1 ? " \u00b7 x" + l.quantity : ""}{" "}
+                          <span className="text-ink-soft/70">({zonas})</span>
+                        </span>
+                        <span className="tabular-nums">
+                          ${lb.total.toLocaleString("es-AR")}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
 
-                    <div className="mt-3 flex flex-wrap gap-3">
-                      {addedZoneKeys.map((key) => {
-                        const zone = printZones.find((z) => z.key === key);
-                        const img = prints[key].image;
-                        return (
-                          <div key={key} className="w-20">
-                            <div className="relative aspect-square overflow-hidden rounded-lg border border-line bg-panel">
-                              {img && (
-                                <Image
-                                  src={img.url}
-                                  alt={zone?.label ?? key}
-                                  fill
-                                  className="object-contain p-1.5"
-                                />
-                              )}
-                            </div>
-                            <p className="mt-1 truncate text-center text-[11px] text-ink-soft">
-                              {zone?.label ?? key}
-                            </p>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div className="sm:w-56">
-                    <PriceBreakdown breakdown={breakdown} />
-                  </div>
+                <div className="mt-3 flex justify-between gap-4 border-t border-line pt-3">
+                  <span className="font-medium">Total</span>
+                  <span className="font-display text-lg tabular-nums">
+                    ${cartTotal.toLocaleString("es-AR")}
+                  </span>
                 </div>
               </div>
 
@@ -741,31 +953,72 @@ export function OrderWizard({
         </div>
 
         <div className="flex flex-wrap items-center justify-end gap-x-6 gap-y-3">
-          {product && (
-            // El total solo se vuelve creíble si se puede abrir y ver de dónde
+          {(step >= 3 ? lines.length > 0 : !!product) && (
+            // El total solo se vuelve creible si se puede abrir y ver de donde
             // sale cada peso.
             <details className="group relative text-sm text-ink-soft">
               <summary className="flex cursor-pointer list-none items-center gap-1.5">
-                Total:{" "}
-                <strong className="text-ink">${total.toLocaleString("es-AR")}</strong>
+                {step >= 3 ? "Total: " : "Esta prenda: "}
+                <strong className="text-ink">
+                  ${(step >= 3 ? cartTotal : total).toLocaleString("es-AR")}
+                </strong>
                 <ChevronDown
                   size={14}
                   className="transition-transform group-open:rotate-180"
                 />
               </summary>
-              <div className="absolute bottom-full right-0 z-20 mb-2 w-64 rounded-xl border border-line bg-panel p-4 shadow-lg">
-                <PriceBreakdown breakdown={breakdown} />
+              <div className="absolute bottom-full right-0 z-20 mb-2 w-72 rounded-xl border border-line bg-panel p-4 shadow-lg">
+                {step >= 3 ? (
+                  <dl>
+                    {lines.map((l) => (
+                      <div key={l.id} className="flex justify-between gap-4 py-1 text-sm">
+                        <dt className="text-ink-soft">
+                          {products.find((p) => p.id === l.productId)?.name} T{l.size}
+                          {l.quantity > 1 ? " x" + l.quantity : ""}
+                        </dt>
+                        <dd className="tabular-nums">
+                          ${lineBreakdown(l).total.toLocaleString("es-AR")}
+                        </dd>
+                      </div>
+                    ))}
+                    <div className="mt-1 flex justify-between gap-4 border-t border-line pt-2">
+                      <dt className="font-medium">Total</dt>
+                      <dd className="font-display text-lg tabular-nums">
+                        ${cartTotal.toLocaleString("es-AR")}
+                      </dd>
+                    </div>
+                  </dl>
+                ) : (
+                  <PriceBreakdown breakdown={breakdown} />
+                )}
               </div>
             </details>
           )}
-          {step < STEPS.length - 1 ? (
+
+          {step < 3 && lines.length > 0 && (
+            <span className="text-xs text-ink-soft">
+              {lines.length} prenda{lines.length !== 1 ? "s" : ""} ya en el pedido
+            </span>
+          )}
+
+          {step === 2 ? (
+            <button
+              type="button"
+              disabled={!canNext}
+              onClick={addCurrentToCart}
+              className="inline-flex items-center gap-1 rounded-full bg-ink px-6 py-3 text-sm text-paper transition-colors hover:bg-accent disabled:opacity-30"
+            >
+              <Plus size={16} />
+              {editingLineId ? "Guardar cambios" : "Agregar al pedido"}
+            </button>
+          ) : step < STEPS.length - 1 ? (
             <button
               type="button"
               disabled={!canNext}
               onClick={() => setStep((s) => s + 1)}
               className="inline-flex items-center gap-1 rounded-full bg-ink px-6 py-3 text-sm text-paper transition-colors hover:bg-accent disabled:opacity-30"
             >
-              Siguiente <ChevronRight size={16} />
+              {step === 3 ? "Continuar" : "Siguiente"} <ChevronRight size={16} />
             </button>
           ) : (
             <button

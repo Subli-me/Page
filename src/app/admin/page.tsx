@@ -29,9 +29,21 @@ export default async function AdminOrdersPage() {
 
 async function fetchOrders() {
   const supabase = createServiceClient();
-  const { data } = await supabase
+
+  const withLines = await supabase
+    .from("orders")
+    .select(
+      "*, order_lines(*, products(name), order_items(*, print_zones(label))), products(name), order_items(*, print_zones(label))"
+    )
+    .order("created_at", { ascending: false });
+
+  if (!withLines.error) return withLines.data ?? [];
+
+  // Si todavía no se corrió la migración de order_lines, mostramos los pedidos
+  // con la forma vieja en vez de dejar el panel vacío.
+  const legacy = await supabase
     .from("orders")
     .select("*, products(name), order_items(*, print_zones(label))")
     .order("created_at", { ascending: false });
-  return data ?? [];
+  return legacy.data ?? [];
 }
