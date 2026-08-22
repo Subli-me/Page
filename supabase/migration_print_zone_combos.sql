@@ -23,6 +23,20 @@ alter table print_zone_combos enable row level security;
 
 -- Lectura pública: el armado del pedido necesita calcular el total antes de
 -- que exista una sesión.
-drop policy if exists "public read zone combos" on print_zone_combos;
-create policy "public read zone combos" on print_zone_combos
-  for select using (true);
+--
+-- Se crea dentro de un bloque condicional en vez de un `drop policy if exists`
+-- previo: hace lo mismo (poder correr el script dos veces sin romper) pero sin
+-- la palabra DROP, que hace saltar la advertencia de operación destructiva del
+-- editor de Supabase aunque acá no borre nada.
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public'
+      and tablename = 'print_zone_combos'
+      and policyname = 'public read zone combos'
+  ) then
+    create policy "public read zone combos" on print_zone_combos
+      for select using (true);
+  end if;
+end $$;
