@@ -37,6 +37,27 @@ type State =
 
 const ZOOM_STEPS = [1, 1.5, 2, 2.5];
 
+/**
+ * Aclara un poco el color con el que se pinta la prenda.
+ *
+ * La foto es un PNG cuya tela es casi transparente (alfa ~25 de 255), así que
+ * el color de atrás aporta el 90% del resultado y los pliegues apenas el 10%.
+ * Con un negro puro eso da una mancha plana sin relieve. Levantamos el color
+ * mezclándolo con blanco, más cuanto más oscuro sea: el negro sigue leyéndose
+ * como negro pero deja ver la tela, y los colores claros quedan casi intactos.
+ */
+function fabricColor(hex: string): string {
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.trim());
+  if (!m) return hex;
+
+  const [r, g, b] = [1, 2, 3].map((i) => parseInt(m[i], 16));
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  const lift = 0.22 * (1 - luminance);
+  const mix = (c: number) => Math.round(c + (255 - c) * lift);
+
+  return `rgb(${mix(r)}, ${mix(g)}, ${mix(b)})`;
+}
+
 export function PreviewStage({
   productId,
   size,
@@ -204,7 +225,7 @@ export function PreviewStage({
                 {colorHex && (
                   <div
                     className="pointer-events-none absolute inset-0"
-                    style={{ backgroundColor: colorHex }}
+                    style={{ backgroundColor: fabricColor(colorHex) }}
                   />
                 )}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
