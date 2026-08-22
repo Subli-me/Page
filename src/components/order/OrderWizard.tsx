@@ -5,7 +5,8 @@ import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import clsx from "clsx";
-import { Check, ChevronLeft, ChevronRight, Shirt } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, MessageCircle, Shirt } from "lucide-react";
+import { ORDER_WHATSAPP_NUMBERS, whatsappLink } from "@/lib/contact";
 import type { DesignCatalogItem, PrintZone, Product, ProductColor, ProductSize } from "@/lib/types";
 import { type UploadedImage } from "./ImageUploader";
 import { DesignPicker } from "./DesignPicker";
@@ -49,6 +50,7 @@ export function OrderWizard({
   const [activeZone, setActiveZone] = useState<string | null>(null);
   const [contact, setContact] = useState({ name: "", email: "", phone: "", notes: "" });
   const [status, setStatus] = useState<"idle" | "submitting" | "done" | "error">("idle");
+  const [orderId, setOrderId] = useState<string | null>(null);
 
   const product = products.find((p) => p.id === productId) ?? null;
   const productSizes = sizes.filter((s) => s.product_id === productId);
@@ -127,6 +129,8 @@ export function OrderWizard({
         }),
       });
       if (!res.ok) throw new Error();
+      const json = await res.json();
+      setOrderId(json.order?.id ?? null);
       setStatus("done");
     } catch {
       setStatus("error");
@@ -134,6 +138,36 @@ export function OrderWizard({
   }
 
   if (status === "done") {
+    // El pedido ya quedó guardado; esto es para que nos llegue el aviso al
+    // celular sin depender de que miremos el panel.
+    const zoneLabels = addedZoneKeys
+      .map((k) => printZones.find((z) => z.key === k)?.label ?? k)
+      .join(", ");
+    const designUrls = addedZoneKeys
+      .map((k) => prints[k].image?.url)
+      .filter(Boolean)
+      .join("\n");
+
+    const waMessage = [
+      `¡Hola! Acabo de hacer un pedido${orderId ? ` (#${orderId.slice(0, 8)})` : ""}.`,
+      "",
+      `Prenda: ${product?.name ?? ""}`,
+      `Talle: ${size ?? ""}`,
+      color ? `Color: ${color}` : null,
+      `Estampado: ${zoneLabels}`,
+      `Total: $${total.toLocaleString("es-AR")}`,
+      "",
+      `Nombre: ${contact.name}`,
+      `Email: ${contact.email}`,
+      contact.phone ? `Teléfono: ${contact.phone}` : null,
+      contact.notes ? `Notas: ${contact.notes}` : null,
+      designUrls ? `\nDiseño:\n${designUrls}` : null,
+    ]
+      .filter((l) => l !== null)
+      .join("\n");
+
+    const [principal, alternativo] = ORDER_WHATSAPP_NUMBERS;
+
     return (
       <div className="rounded-2xl border border-line bg-panel px-8 py-16 text-center">
         <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-accent-soft text-accent">
@@ -143,6 +177,30 @@ export function OrderWizard({
         <p className="mt-3 text-ink-soft">
           {confirmationMessage} Te escribimos a <strong>{contact.email}</strong>.
         </p>
+
+        <div className="mt-8 flex flex-col items-center gap-3">
+          <a
+            href={whatsappLink(principal.wa, waMessage)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-full bg-ink px-6 py-3 text-sm font-medium text-paper transition-colors hover:bg-accent"
+          >
+            <MessageCircle size={16} /> Enviarnos el pedido por WhatsApp
+          </a>
+          <p className="max-w-sm text-xs text-ink-soft">
+            Así lo vemos al toque y te confirmamos más rápido. También podés
+            escribirnos al{" "}
+            <a
+              href={whatsappLink(alternativo.wa, waMessage)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-ink"
+            >
+              {alternativo.label}
+            </a>
+            .
+          </p>
+        </div>
       </div>
     );
   }
