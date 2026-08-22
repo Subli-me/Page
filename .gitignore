@@ -43,3 +43,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# imagenes recuperadas de la cache de Vercel (para resubir al admin)
+disenos-recuperados/
