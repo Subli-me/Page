@@ -139,29 +139,61 @@ export function OrderWizard({
 
   if (status === "done") {
     // El pedido ya quedó guardado; esto es para que nos llegue el aviso al
-    // celular sin depender de que miremos el panel.
-    const zoneLabels = addedZoneKeys
-      .map((k) => printZones.find((z) => z.key === k)?.label ?? k)
-      .join(", ");
-    const designUrls = addedZoneKeys
-      .map((k) => prints[k].image?.url)
-      .filter(Boolean)
-      .join("\n");
+    // celular con todo lo necesario para producirlo sin abrir el panel.
+    const money = (n: number) => `$${Number(n).toLocaleString("es-AR")}`;
+    const sizeDelta = Number(productSizes.find((s) => s.size === size)?.price_delta ?? 0);
+
+    // Cada zona con su imagen y su adicional, para no tener que adivinar qué
+    // diseño va en qué parte de la prenda.
+    const zoneBlocks = addedZoneKeys.map((k) => {
+      const zone = printZones.find((z) => z.key === k);
+      const extra = Number(zone?.extra_price ?? 0);
+      const url = prints[k].image?.url;
+      return [
+        `• ${zone?.label ?? k}${extra > 0 ? ` (+${money(extra)})` : ""}`,
+        url ? `  ${url}` : null,
+      ]
+        .filter(Boolean)
+        .join("\n");
+    });
+
+    const priceLines = [
+      `${product?.name ?? "Prenda"}: ${money(product?.base_price ?? 0)}`,
+      sizeDelta > 0 ? `Talle ${size}: +${money(sizeDelta)}` : null,
+      ...addedZoneKeys
+        .map((k) => {
+          const zone = printZones.find((z) => z.key === k);
+          const extra = Number(zone?.extra_price ?? 0);
+          return extra > 0 ? `${zone?.label ?? k}: +${money(extra)}` : null;
+        })
+        .filter(Boolean),
+      `TOTAL: ${money(total)}`,
+    ].filter(Boolean);
 
     const waMessage = [
-      `¡Hola! Acabo de hacer un pedido${orderId ? ` (#${orderId.slice(0, 8)})` : ""}.`,
+      `🧾 NUEVO PEDIDO${orderId ? ` #${orderId.slice(0, 8)}` : ""}`,
+      new Date().toLocaleString("es-AR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
       "",
-      `Prenda: ${product?.name ?? ""}`,
-      `Talle: ${size ?? ""}`,
-      color ? `Color: ${color}` : null,
-      `Estampado: ${zoneLabels}`,
-      `Total: $${total.toLocaleString("es-AR")}`,
+      "👕 PRENDA",
+      `${product?.name ?? ""} — Talle ${size ?? ""}${color ? ` — ${color}` : ""}`,
       "",
-      `Nombre: ${contact.name}`,
-      `Email: ${contact.email}`,
-      contact.phone ? `Teléfono: ${contact.phone}` : null,
-      contact.notes ? `Notas: ${contact.notes}` : null,
-      designUrls ? `\nDiseño:\n${designUrls}` : null,
+      `🎨 ESTAMPADO (${addedZoneKeys.length})`,
+      ...zoneBlocks,
+      "",
+      "💰 PRECIO",
+      ...priceLines,
+      "",
+      "👤 CLIENTE",
+      contact.name,
+      contact.email,
+      contact.phone || null,
+      contact.notes ? `\n📝 NOTAS\n${contact.notes}` : null,
     ]
       .filter((l) => l !== null)
       .join("\n");
