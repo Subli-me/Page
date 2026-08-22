@@ -37,6 +37,53 @@ type State =
 
 const ZOOM_STEPS = [1, 1.5, 2, 2.5];
 
+function hexToRgb(hex: string) {
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.trim());
+  if (!m) return null;
+  return { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) };
+}
+
+/**
+ * Tiñe la foto de la prenda al color elegido multiplicando cada canal por el
+ * color destino. Conserva el alfa (el fondo transparente sigue transparente) y
+ * la luminancia (sombras y pliegues se mantienen). Si el canvas queda
+ * contaminado por CORS devolvemos null y se muestra la foto original.
+ */
+function tintGarment(imageUrl: string, hex: string): Promise<string | null> {
+  return new Promise((resolve) => {
+    const rgb = hexToRgb(hex);
+    if (!rgb) return resolve(null);
+
+    const img = new window.Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return resolve(null);
+
+        ctx.drawImage(img, 0, 0);
+        const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const d = frame.data;
+        for (let i = 0; i < d.length; i += 4) {
+          if (d[i + 3] === 0) continue; // pixel transparente: no tocar
+          d[i] = (d[i] * rgb.r) / 255;
+          d[i + 1] = (d[i + 1] * rgb.g) / 255;
+          d[i + 2] = (d[i + 2] * rgb.b) / 255;
+        }
+        ctx.putImageData(frame, 0, 0);
+        resolve(canvas.toDataURL("image/png"));
+      } catch {
+        resolve(null);
+      }
+    };
+    img.onerror = () => resolve(null);
+    img.src = imageUrl;
+  });
+}
+
 export function PreviewStage({
   productId,
   size,
@@ -51,6 +98,7 @@ export function PreviewStage({
   const [state, setState] = useState<State>({ kind: "blank" });
   const [zoomIndex, setZoomIndex] = useState(0);
   const [showGrid, setShowGrid] = useState(false);
+  const [tintedUrl, setTintedUrl] = useState<string | null>(null);
   const requestId = useRef(0);
   const imageUrl = image?.url ?? null;
   const zoom = ZOOM_STEPS[zoomIndex];
@@ -115,6 +163,22 @@ export function PreviewStage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.kind, state.kind === "composite" ? state.designUrl : null]);
 
+  const baseImageUrl = state.kind === "composite" ? state.baseImageUrl : null;
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!baseImageUrl || !colorHex) {
+      setTintedUrl(null);
+      return;
+    }
+    tintGarment(baseImageUrl, colorHex).then((url) => {
+      if (!cancelled) setTintedUrl(url);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [baseImageUrl, colorHex]);
+
   if (state.kind === "composite") {
     const zoneChosen = !!printZoneKey;
     return (
@@ -125,33 +189,13 @@ export function PreviewStage({
             style={{ transform: `scale(${zoom})` }}
           >
             {state.baseImageUrl ? (
-              <div className="relative">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={state.baseImageUrl}
-                  alt="Prenda"
-                  className="block max-h-105 w-auto sm:max-h-135"
-                  draggable={false}
-                />
-                {colorHex && (
-                  /* Tiñe la prenda manteniendo sombras y pliegues. La máscara
-                     limita el color a la silueta cuando la foto es PNG con fondo
-                     transparente. */
-                  <div
-                    className="pointer-events-none absolute inset-0"
-                    style={{
-                      backgroundColor: colorHex,
-                      mixBlendMode: "multiply",
-                      WebkitMaskImage: `url(${state.baseImageUrl})`,
-                      maskImage: `url(${state.baseImageUrl})`,
-                      WebkitMaskSize: "100% 100%",
-                      maskSize: "100% 100%",
-                      WebkitMaskRepeat: "no-repeat",
-                      maskRepeat: "no-repeat",
-                    }}
-                  />
-                )}
-              </div>
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={tintedUrl ?? state.baseImageUrl}
+                alt="Prenda"
+                className="block max-h-105 w-auto sm:max-h-135"
+                draggable={false}
+              />
             ) : (
               <div
                 className="h-105 w-105 sm:h-135 sm:w-135"
