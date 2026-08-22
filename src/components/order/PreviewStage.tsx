@@ -121,13 +121,27 @@ export function PreviewStage({
             style={{ transform: `scale(${zoom})` }}
           >
             {state.baseImageUrl ? (
-              /* eslint-disable-next-line @next/next/no-img-element */
-              <img
-                src={state.baseImageUrl}
-                alt="Prenda"
-                className="block max-h-105 w-auto sm:max-h-135"
-                draggable={false}
-              />
+              <div className="relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={state.baseImageUrl}
+                  alt="Prenda"
+                  className="block max-h-105 w-auto sm:max-h-135"
+                  draggable={false}
+                  style={colorHex ? { filter: `drop-shadow(0 0 0 ${colorHex})` } : undefined}
+                />
+                {colorHex && (
+                  <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                      backgroundColor: colorHex,
+                      mixBlendMode: "multiply",
+                      maxHeight: "inherit",
+                      maxWidth: "inherit",
+                    }}
+                  />
+                )}
+              </div>
             ) : (
               <div
                 className="h-105 w-105 sm:h-135 sm:w-135"
