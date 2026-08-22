@@ -11,33 +11,49 @@
  * lo que prueba el admin es exactamente lo que termina viendo el cliente.
  */
 
+/** Devuelve el brillo del color, de 0 (negro) a 1 (blanco). */
+function luminance(r: number, g: number, b: number) {
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+}
+
+function parseHex(hex: string) {
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.trim());
+  return m ? ([1, 2, 3].map((i) => parseInt(m[i], 16)) as [number, number, number]) : null;
+}
+
 /**
  * Cuántas veces se dibuja la foto encima del color.
  *
- * Con una sola pasada llegan apenas 11 niveles de contraste y la prenda se ve
- * como un bloque plano. Cada copia vuelve a componer sobre la anterior: con
- * tres, el relieve sube a ~30 niveles sin ensuciar los colores claros (un
- * blanco queda en ~221, dentro de lo que da la sombra real de una prenda).
+ * El apilado existe para recuperar contraste: sobre un color oscuro, una sola
+ * pasada deja llegar apenas 11 niveles y la prenda se ve como un bloque plano;
+ * con tres el relieve sube a ~30. Pero sobre una prenda blanca no hay nada que
+ * recuperar — la foto ya se ve bien — y apilarla solo la ensucia (la lleva de
+ * 243 a 221, un blanco sucio).
+ *
+ * Por eso la cantidad de copias sigue a lo oscuro que sea el color: 3 para el
+ * negro, 1 para el blanco, sin saltos bruscos en el medio.
  */
-export const GARMENT_LAYERS = 3;
+export function garmentLayers(hex: string): number {
+  const rgb = parseHex(hex);
+  if (!rgb) return 1;
+  return 1 + Math.round(2 * (1 - luminance(...rgb)));
+}
 
 /**
  * Aclara apenas el color con el que se pinta la prenda.
  *
  * Como el color de atrás aporta la mayor parte del resultado, un negro puro
  * tira el resultado al piso. Lo mezclamos con blanco, más cuanto más oscuro
- * sea: el negro sigue leyéndose como negro y los claros quedan intactos.
+ * sea: el negro sigue leyéndose como negro y el blanco queda intacto.
  */
 export function fabricColor(hex: string): string {
-  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.trim());
-  if (!m) return hex;
+  const rgb = parseHex(hex);
+  if (!rgb) return hex;
 
-  const [r, g, b] = [1, 2, 3].map((i) => parseInt(m[i], 16));
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  const lift = 0.12 * (1 - luminance);
+  const lift = 0.12 * (1 - luminance(...rgb));
   const mix = (c: number) => Math.round(c + (255 - c) * lift);
 
-  return `rgb(${mix(r)}, ${mix(g)}, ${mix(b)})`;
+  return `rgb(${mix(rgb[0])}, ${mix(rgb[1])}, ${mix(rgb[2])})`;
 }
 
 export function GarmentPreview({
@@ -66,7 +82,7 @@ export function GarmentPreview({
       {/* Copias apiladas para que se noten los pliegues. Es la misma URL, así
           que el navegador la descarga una sola vez. */}
       {colorHex &&
-        Array.from({ length: GARMENT_LAYERS - 1 }).map((_, i) => (
+        Array.from({ length: garmentLayers(colorHex) - 1 }).map((_, i) => (
           /* eslint-disable-next-line @next/next/no-img-element */
           <img
             key={i}
