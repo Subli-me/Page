@@ -32,18 +32,30 @@ export async function POST(req: Request) {
     .maybeSingle();
 
   if (ownMockup) {
+    // El overlay se guarda como % de la foto. Filas viejas quedaron en píxeles
+    // y al usarlas como % el diseño se iba fuera de la prenda: si los valores
+    // no entran en 0-100, caemos a una zona central razonable.
+    const raw = {
+      x: Number(ownMockup.overlay_x),
+      y: Number(ownMockup.overlay_y),
+      w: Number(ownMockup.overlay_w),
+      h: Number(ownMockup.overlay_h),
+    };
+    const looksLikePercent =
+      Object.values(raw).every((v) => Number.isFinite(v) && v >= 0 && v <= 100) &&
+      raw.x + raw.w <= 100.5 &&
+      raw.y + raw.h <= 100.5 &&
+      raw.w > 0 &&
+      raw.h > 0;
+
     return NextResponse.json({
       available: true,
       source: "own",
+      needsZoneReview: !looksLikePercent,
       mockup: {
         baseImageUrl: ownMockup.image_url,
         foregroundUrl: null,
-        overlay: {
-          x: ownMockup.overlay_x,
-          y: ownMockup.overlay_y,
-          w: ownMockup.overlay_w,
-          h: ownMockup.overlay_h,
-        },
+        overlay: looksLikePercent ? raw : { x: 30, y: 25, w: 40, h: 40 },
       },
     });
   }
