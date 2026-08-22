@@ -9,6 +9,7 @@ import { EditableNumber } from "./EditableNumber";
 import { ImageUploader } from "@/components/order/ImageUploader";
 import { MediaDisplay } from "@/components/MediaDisplay";
 import { MockupZoneEditor } from "./MockupZoneEditor";
+import { GarmentPreview, fabricColor } from "@/components/GarmentPreview";
 
 export function ProductsAdmin({
   initialProducts,
@@ -200,6 +201,15 @@ export function ProductsAdmin({
     await fetch(`/api/admin/colors/${id}`, { method: "DELETE" });
   }
 
+  async function saveColor(id: string, field: "name" | "hex", value: string) {
+    setColors((prev) => prev.map((c) => (c.id === id ? { ...c, [field]: value } : c)));
+    await fetch(`/api/admin/colors/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ [field]: value }),
+    });
+  }
+
   async function saveMockup(productId: string, mockupData: Omit<ProductMockup, "id" | "product_id">) {
     const existing = mockups.find((m) => m.product_id === productId && m.print_zone_key === mockupData.print_zone_key);
 
@@ -269,6 +279,7 @@ export function ProductsAdmin({
                   onMoveSize={moveSize}
                   onAddColor={addColor}
                   onRemoveColor={removeColor}
+                  onSaveColor={saveColor}
                   onSaveMockup={saveMockup}
                   onRemoveMockup={removeMockup}
                   editingMockup={editingMockup}
@@ -381,6 +392,7 @@ function ProductRow({
   onMoveSize,
   onAddColor,
   onRemoveColor,
+  onSaveColor,
   onSaveMockup,
   onRemoveMockup,
   editingMockup,
@@ -411,6 +423,7 @@ function ProductRow({
   onMoveSize: (productId: string, sizeIndex: number, direction: "up" | "down") => void;
   onAddColor: (productId: string, name: string, hex: string) => void;
   onRemoveColor: (id: string) => void;
+  onSaveColor: (id: string, field: "name" | "hex", value: string) => void;
   onSaveMockup: (productId: string, mockupData: Omit<ProductMockup, "id" | "product_id">) => void;
   onRemoveMockup: (id: string) => void;
   editingMockup: { productId: string; zoneKey: string } | null;
@@ -419,6 +432,11 @@ function ProductRow({
   const [newSize, setNewSize] = useState("");
   const [newColorName, setNewColorName] = useState("");
   const [newColorHex, setNewColorHex] = useState("#16150f");
+
+  // Para las muestras de color usamos el mockup de la primera zona que tenga
+  // foto cargada — normalmente el frente de la prenda.
+  const previewMockup =
+    zones.map((z) => mockups.find((m) => m.print_zone_key === z.key)).find(Boolean) ?? null;
 
   return (
     <>
@@ -629,16 +647,61 @@ function ProductRow({
                 </div>
 
                 <div>
-                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-soft">Colores</p>
-                  <div className="flex flex-wrap gap-2">
+                  <p className="mb-1 text-xs font-medium uppercase tracking-wide text-ink-soft">Colores</p>
+                  <p className="mb-2 text-[11px] text-ink-soft">
+                    {previewMockup
+                      ? "Así ve el cliente cada color. Tocá el círculo para ajustarlo."
+                      : "Cargá un mockup abajo para ver cada color sobre la prenda."}
+                  </p>
+
+                  <div className="flex flex-wrap gap-3">
                     {colors.map((c) => (
-                      <span key={c.id} className="inline-flex items-center gap-1.5 rounded-full border border-line bg-panel px-3 py-1 text-xs">
-                        <span className="h-3 w-3 rounded-full border border-line" style={{ backgroundColor: c.hex }} />
-                        {c.name}
-                        <button type="button" onClick={() => onRemoveColor(c.id)} className="text-ink-soft hover:text-accent">
-                          <Trash2 size={11} />
-                        </button>
-                      </span>
+                      <div
+                        key={c.id}
+                        className="group/color relative w-20 rounded-lg border border-line bg-panel p-1.5"
+                      >
+                        <div className="relative overflow-hidden rounded bg-accent-soft/40">
+                          {previewMockup ? (
+                            <GarmentPreview
+                              imageUrl={previewMockup.image_url}
+                              colorHex={c.hex}
+                              imageClassName="w-full"
+                              alt={`${product.name} en ${c.name}`}
+                            />
+                          ) : (
+                            <div
+                              className="aspect-square w-full"
+                              style={{ backgroundColor: fabricColor(c.hex) }}
+                            />
+                          )}
+                        </div>
+
+                        <div className="mt-1.5 flex items-center gap-1">
+                          <input
+                            type="color"
+                            value={c.hex}
+                            onChange={(e) => onSaveColor(c.id, "hex", e.target.value)}
+                            title={`${c.name} — ${c.hex}`}
+                            className="h-5 w-5 shrink-0 cursor-pointer rounded-full border border-line bg-transparent p-0"
+                          />
+                          <input
+                            className="min-w-0 flex-1 bg-transparent text-[11px] outline-none focus:underline"
+                            defaultValue={c.name}
+                            onBlur={(e) =>
+                              e.target.value.trim() &&
+                              e.target.value !== c.name &&
+                              onSaveColor(c.id, "name", e.target.value.trim())
+                            }
+                          />
+                          <button
+                            type="button"
+                            onClick={() => onRemoveColor(c.id)}
+                            className="shrink-0 text-ink-soft opacity-0 transition-opacity hover:text-accent group-hover/color:opacity-100"
+                          >
+                            <Trash2 size={11} />
+                          </button>
+                        </div>
+                      </div>
                     ))}
                   </div>
                   <div className="mt-2 flex items-center gap-2">

@@ -6,6 +6,7 @@ import { Grid3x3, ImagePlus, Loader2, Minus, Plus, Sparkles } from "lucide-react
 import clsx from "clsx";
 import type { UploadedImage } from "./ImageUploader";
 import { DesignAdjuster, type DesignTransform } from "./DesignAdjuster";
+import { GarmentPreview } from "@/components/GarmentPreview";
 
 type Params = {
   productId: string;
@@ -36,36 +37,6 @@ type State =
   | { kind: "error" };
 
 const ZOOM_STEPS = [1, 1.5, 2, 2.5];
-
-/**
- * Cuántas veces se dibuja la foto de la prenda encima del color.
- *
- * La tela del PNG tiene un alfa de ~26 sobre 255, así que una sola pasada deja
- * llegar apenas 11 niveles de contraste y la prenda se ve como un bloque plano.
- * Cada copia vuelve a componer sobre la anterior: con tres, el relieve sube a
- * ~30 niveles, que ya se lee, sin que los colores claros se ensucien (un blanco
- * queda en ~221, dentro de lo que da la sombra real de una prenda).
- */
-const GARMENT_LAYERS = 3;
-
-/**
- * Aclara apenas el color con el que se pinta la prenda.
- *
- * Como el color de atrás aporta la mayor parte del resultado, un negro puro
- * tira el resultado al piso. Lo mezclamos con blanco, más cuanto más oscuro
- * sea: el negro sigue leyéndose como negro y los claros quedan intactos.
- */
-function fabricColor(hex: string): string {
-  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.trim());
-  if (!m) return hex;
-
-  const [r, g, b] = [1, 2, 3].map((i) => parseInt(m[i], 16));
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  const lift = 0.12 * (1 - luminance);
-  const mix = (c: number) => Math.round(c + (255 - c) * lift);
-
-  return `rgb(${mix(r)}, ${mix(g)}, ${mix(b)})`;
-}
 
 export function PreviewStage({
   productId,
@@ -225,40 +196,11 @@ export function PreviewStage({
             style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}
           >
             {state.baseImageUrl ? (
-              /* La foto de la prenda es un PNG donde la tela es semitransparente
-                 y el fondo opaco: pintando el color detrás, se ve a través de la
-                 tela (queda teñida con sus pliegues) y queda tapado fuera de la
-                 silueta. Con una foto totalmente opaca, esta capa simplemente no
-                 se ve y la prenda se muestra tal cual. */
-              <div className="relative inline-block">
-                {colorHex && (
-                  <div
-                    className="pointer-events-none absolute inset-0"
-                    style={{ backgroundColor: fabricColor(colorHex) }}
-                  />
-                )}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={state.baseImageUrl}
-                  alt="Prenda"
-                  className="relative block max-h-105 w-auto sm:max-h-135"
-                  draggable={false}
-                />
-                {/* Copias apiladas para que los pliegues se noten. Es la misma
-                    URL, así que el navegador la descarga una sola vez. */}
-                {colorHex &&
-                  Array.from({ length: GARMENT_LAYERS - 1 }).map((_, i) => (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img
-                      key={i}
-                      src={state.baseImageUrl!}
-                      alt=""
-                      aria-hidden
-                      draggable={false}
-                      className="pointer-events-none absolute inset-0 h-full w-full"
-                    />
-                  ))}
-              </div>
+              <GarmentPreview
+                imageUrl={state.baseImageUrl}
+                colorHex={colorHex}
+                imageClassName="max-h-105 w-auto sm:max-h-135"
+              />
             ) : (
               <div
                 className="h-105 w-105 sm:h-135 sm:w-135"
