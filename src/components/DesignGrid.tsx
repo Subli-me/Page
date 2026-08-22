@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import clsx from "clsx";
-import { Palette } from "lucide-react";
+import { Palette, ArrowUpRight } from "lucide-react";
 import type { DesignCatalogItem, DesignCategory } from "@/lib/types";
 import { Reveal } from "./Reveal";
 
@@ -22,7 +23,7 @@ const COLORS = [
   { name: "Multicolor", value: "multicolor" },
 ];
 
-export function DesignGrid({ designs }: { designs: DesignCatalogItem[] }) {
+export function DesignGrid({ designs, maxItems }: { designs: DesignCatalogItem[]; maxItems?: number }) {
   const [activeColor, setActiveColor] = useState<string>("");
   const [activeCategory, setActiveCategory] = useState<string>("");
   const [categories, setCategories] = useState<DesignCategory[]>([]);
@@ -52,6 +53,10 @@ export function DesignGrid({ designs }: { designs: DesignCatalogItem[] }) {
     if (activeCategory && !d.category_ids.includes(activeCategory)) return false;
     return true;
   });
+
+  // Limitar diseños mostrados si se especifica maxItems
+  const displayedDesigns = maxItems ? filtered.slice(0, maxItems) : filtered;
+  const hasMore = maxItems && filtered.length > maxItems;
 
   // Contar diseños por color y categoría
   const colorCounts = COLORS.map((c) => ({
@@ -160,7 +165,7 @@ export function DesignGrid({ designs }: { designs: DesignCatalogItem[] }) {
 
       {/* Grilla de diseños */}
       <AnimatePresence mode="popLayout">
-        {filtered.length === 0 ? (
+        {displayedDesigns.length === 0 ? (
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -170,11 +175,12 @@ export function DesignGrid({ designs }: { designs: DesignCatalogItem[] }) {
             No hay diseños con estos filtros.
           </motion.p>
         ) : (
-          <motion.div
-            layout
-            className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 sm:gap-4"
-          >
-            {filtered.map((d, i) => {
+          <div className="space-y-6">
+            <motion.div
+              layout
+              className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 sm:gap-4"
+            >
+              {displayedDesigns.map((d, i) => {
               const designCategories = categories.filter((c) =>
                 d.category_ids.includes(c.id)
               );
@@ -218,7 +224,20 @@ export function DesignGrid({ designs }: { designs: DesignCatalogItem[] }) {
                 </Reveal>
               );
             })}
-          </motion.div>
+            </motion.div>
+
+            {/* Botón Ver más */}
+            {hasMore && (
+              <div className="flex justify-center pt-4">
+                <Link
+                  href="/pedido"
+                  className="inline-flex items-center gap-2 rounded-full border border-line px-6 py-3 text-sm hover:border-ink hover:bg-panel transition-colors"
+                >
+                  Ver más diseños <ArrowUpRight size={15} />
+                </Link>
+              </div>
+            )}
+          </div>
         )}
       </AnimatePresence>
     </div>

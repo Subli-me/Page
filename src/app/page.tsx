@@ -129,7 +129,7 @@ export default async function Home({
                 </div>
               </Reveal>
 
-              <DesignGrid designs={designs} />
+              <DesignGrid designs={designs} maxItems={5} />
 
               <div className="mt-10 flex sm:hidden justify-center">
                 <Link
