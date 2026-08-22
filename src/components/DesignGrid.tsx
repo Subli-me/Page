@@ -230,7 +230,7 @@ export function DesignGrid({ designs, maxItems }: { designs: DesignCatalogItem[]
             {hasMore && (
               <div className="flex justify-center pt-4">
                 <Link
-                  href="/pedido"
+                  href="/disenos"
                   className="inline-flex items-center gap-2 rounded-full border border-line px-6 py-3 text-sm hover:border-ink hover:bg-panel transition-colors"
                 >
                   Ver más diseños <ArrowUpRight size={15} />

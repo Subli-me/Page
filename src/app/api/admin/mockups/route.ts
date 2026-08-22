@@ -5,9 +5,13 @@ import { isAuthorizedAdmin } from "@/lib/admin-auth";
 
 const schema = z.object({
   productId: z.string().uuid(),
-  printZoneKey: z.string().min(1),
-  imageUrl: z.string().url(),
-  imagePublicId: z.string().min(1),
+  print_zone_key: z.string().min(1),
+  image_url: z.string().url(),
+  image_public_id: z.string(),
+  overlay_x: z.number().int().min(0),
+  overlay_y: z.number().int().min(0),
+  overlay_w: z.number().int().min(1),
+  overlay_h: z.number().int().min(1),
 });
 
 export async function POST(req: Request) {
@@ -17,7 +21,7 @@ export async function POST(req: Request) {
 
   const parsed = schema.safeParse(await req.json());
   if (!parsed.success) return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });
-  const { productId, printZoneKey, imageUrl, imagePublicId } = parsed.data;
+  const { productId, print_zone_key, image_url, image_public_id, overlay_x, overlay_y, overlay_w, overlay_h } = parsed.data;
 
   const service = createServiceClient();
   const { data, error } = await service
@@ -25,9 +29,13 @@ export async function POST(req: Request) {
     .upsert(
       {
         product_id: productId,
-        print_zone_key: printZoneKey,
-        image_url: imageUrl,
-        image_public_id: imagePublicId,
+        print_zone_key,
+        image_url,
+        image_public_id,
+        overlay_x,
+        overlay_y,
+        overlay_w,
+        overlay_h,
       },
       { onConflict: "product_id,print_zone_key" }
     )

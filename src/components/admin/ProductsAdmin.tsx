@@ -2,29 +2,34 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { ChevronDown, ChevronUp, Plus, Shirt, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, Shirt, Trash2, Edit2 } from "lucide-react";
 import clsx from "clsx";
-import type { PrintZone, Product, ProductColor, ProductSize } from "@/lib/types";
+import type { PrintZone, Product, ProductColor, ProductSize, ProductMockup } from "@/lib/types";
 import { EditableNumber } from "./EditableNumber";
 import { ImageUploader } from "@/components/order/ImageUploader";
 import { MediaDisplay } from "@/components/MediaDisplay";
+import { MockupZoneEditor } from "./MockupZoneEditor";
 
 export function ProductsAdmin({
   initialProducts,
   initialZones,
   initialSizes,
   initialColors,
+  initialMockups,
 }: {
   initialProducts: Product[];
   initialZones: PrintZone[];
   initialSizes: ProductSize[];
   initialColors: ProductColor[];
+  initialMockups: ProductMockup[];
 }) {
   const [products, setProducts] = useState(initialProducts);
   const [zones, setZones] = useState(initialZones);
   const [sizes, setSizes] = useState(initialSizes);
   const [colors, setColors] = useState(initialColors);
+  const [mockups, setMockups] = useState(initialMockups);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [editingMockup, setEditingMockup] = useState<{ productId: string; zoneKey: string } | null>(null);
 
   const [newProduct, setNewProduct] = useState({ name: "", price: "0", cost: "0" });
   const [newZone, setNewZone] = useState({ label: "", extraPrice: "0", extraCost: "0" });
@@ -195,6 +200,33 @@ export function ProductsAdmin({
     await fetch(`/api/admin/colors/${id}`, { method: "DELETE" });
   }
 
+  async function saveMockup(productId: string, mockupData: Omit<ProductMockup, "id" | "product_id">) {
+    const existing = mockups.find((m) => m.product_id === productId && m.print_zone_key === mockupData.print_zone_key);
+
+    if (existing) {
+      const updated = { ...existing, ...mockupData };
+      setMockups((prev) => prev.map((m) => (m.id === existing.id ? updated : m)));
+      await fetch(`/api/admin/mockups/${existing.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(mockupData),
+      });
+    } else {
+      const res = await fetch(`/api/admin/mockups`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId, ...mockupData }),
+      });
+      const json = await res.json();
+      if (json.mockup) setMockups((prev) => [...prev, json.mockup]);
+    }
+  }
+
+  async function removeMockup(id: string) {
+    setMockups((prev) => prev.filter((m) => m.id !== id));
+    await fetch(`/api/admin/mockups/${id}`, { method: "DELETE" });
+  }
+
   return (
     <div className="space-y-10">
       <section>
@@ -224,6 +256,8 @@ export function ProductsAdmin({
                   product={p}
                   sizes={sizes.filter((s) => s.product_id === p.id)}
                   colors={colors.filter((c) => c.product_id === p.id)}
+                  mockups={mockups.filter((m) => m.product_id === p.id)}
+                  zones={zones}
                   expanded={expanded === p.id}
                   onToggleExpand={() => setExpanded((e) => (e === p.id ? null : p.id))}
                   onSaveField={saveProduct}
@@ -235,6 +269,10 @@ export function ProductsAdmin({
                   onMoveSize={moveSize}
                   onAddColor={addColor}
                   onRemoveColor={removeColor}
+                  onSaveMockup={saveMockup}
+                  onRemoveMockup={removeMockup}
+                  editingMockup={editingMockup}
+                  onEditMockup={setEditingMockup}
                 />
               ))}
             </tbody>
@@ -325,6 +363,8 @@ function ProductRow({
   product,
   sizes,
   colors,
+  mockups,
+  zones,
   expanded,
   index,
   isFirst,
@@ -341,10 +381,16 @@ function ProductRow({
   onMoveSize,
   onAddColor,
   onRemoveColor,
+  onSaveMockup,
+  onRemoveMockup,
+  editingMockup,
+  onEditMockup,
 }: {
   product: Product;
   sizes: ProductSize[];
   colors: ProductColor[];
+  mockups: ProductMockup[];
+  zones: PrintZone[];
   expanded: boolean;
   index: number;
   isFirst: boolean;
@@ -365,6 +411,10 @@ function ProductRow({
   onMoveSize: (productId: string, sizeIndex: number, direction: "up" | "down") => void;
   onAddColor: (productId: string, name: string, hex: string) => void;
   onRemoveColor: (id: string) => void;
+  onSaveMockup: (productId: string, mockupData: Omit<ProductMockup, "id" | "product_id">) => void;
+  onRemoveMockup: (id: string) => void;
+  editingMockup: { productId: string; zoneKey: string } | null;
+  onEditMockup: (mockup: { productId: string; zoneKey: string } | null) => void;
 }) {
   const [newSize, setNewSize] = useState("");
   const [newColorName, setNewColorName] = useState("");
@@ -614,9 +664,57 @@ function ProductRow({
                   </div>
                 </div>
               </div>
+
+              {/* Mockups por zona */}
+              <div>
+                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-ink-soft">Mockups por Zona</p>
+                <div className="space-y-2">
+                  {zones.map((zone) => {
+                    const mockup = mockups.find((m) => m.print_zone_key === zone.label);
+                    return (
+                      <div key={zone.id} className="flex items-center justify-between rounded-lg border border-line bg-panel px-3 py-2">
+                        <span className="text-xs font-medium">{zone.label}</span>
+                        <button
+                          type="button"
+                          onClick={() => onEditMockup({ productId: product.id, zoneKey: zone.label })}
+                          className="inline-flex items-center gap-1.5 rounded-full bg-ink px-3 py-1 text-xs text-paper hover:bg-accent"
+                        >
+                          <Edit2 size={12} />
+                          {mockup ? "Editar" : "Agregar"}
+                        </button>
+                        {mockup && (
+                          <button
+                            type="button"
+                            onClick={() => onRemoveMockup(mockup.id)}
+                            className="text-ink-soft hover:text-accent"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </td>
         </tr>
+      )}
+
+      {/* Modal para editar mockup */}
+      {editingMockup?.productId === product.id && (
+        <MockupZoneEditor
+          mockup={mockups.find((m) => m.print_zone_key === editingMockup.zoneKey) ?? null}
+          imageUrl={mockups.find((m) => m.print_zone_key === editingMockup.zoneKey)?.image_url ?? null}
+          onSave={(data) => {
+            onSaveMockup(product.id, {
+              ...data,
+              print_zone_key: editingMockup.zoneKey,
+            });
+            onEditMockup(null);
+          }}
+          onClose={() => onEditMockup(null)}
+        />
       )}
     </>
   );
