@@ -22,6 +22,7 @@ import {
 import clsx from "clsx";
 import type { DesignCatalogItem, DesignCategory } from "@/lib/types";
 import { convertToWebP } from "@/lib/imageUtils";
+import { checkDesignImage } from "@/lib/image-check";
 
 type StagedDesign = {
   id: string;
@@ -29,6 +30,8 @@ type StagedDesign = {
   url: string;
   publicId: string;
   status: "uploading" | "ready" | "error";
+  /** Problemas detectados en el archivo: "fondo", "resolucion". */
+  warnings?: string[];
 };
 
 type DraggedDesign = {
@@ -78,6 +81,7 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
   const [recoveringId, setRecoveringId] = useState<string | null>(null);
   const [recoveringAll, setRecoveringAll] = useState(false);
   const [verifyMsg, setVerifyMsg] = useState<string | null>(null);
+  const [quality, setQuality] = useState<Record<string, string[]>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Cargar categorías
@@ -161,6 +165,17 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
 
   async function uploadFile(file: File, tempId: string) {
     try {
+      // Se revisa el archivo original, antes de convertirlo, para avisar si va
+      // a imprimir un recuadro o si va a salir borroso.
+      checkDesignImage(file).then((avisos) => {
+        if (avisos.length === 0) return;
+        setStaged((prev) =>
+          prev.map((item) =>
+            item.id === tempId ? { ...item, warnings: avisos.map((a) => a.kind) } : item
+          )
+        );
+      });
+
       const optimizedFile = await convertToWebP(file, { maxDimension: 2400, quality: 0.85 }).catch(() => file);
 
       const sigRes = await fetch("/api/admin/upload-signature", { method: "POST" });
@@ -304,10 +319,27 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
 
       const ids = (json.broken ?? []).map((b: { id: string }) => b.id);
       setBrokenIds(ids);
+
+      const porDiseno: Record<string, string[]> = {};
+      for (const q of json.quality ?? []) porDiseno[q.id] = q.problemas;
+      setQuality(porDiseno);
+
+      const conFondo = (json.quality ?? []).filter((q: { problemas: string[] }) =>
+        q.problemas.includes("fondo")
+      ).length;
+      const chicas = (json.quality ?? []).filter((q: { problemas: string[] }) =>
+        q.problemas.includes("resolucion")
+      ).length;
+
+      const partes: string[] = [];
+      if (ids.length) partes.push(`${ids.length} sin archivo en Cloudinary`);
+      if (conFondo) partes.push(`${conFondo} sin fondo transparente`);
+      if (chicas) partes.push(`${chicas} con poca resolución`);
+
       setVerifyMsg(
-        ids.length === 0
-          ? `Todo en orden: ${json.okCount} de ${json.total} imágenes disponibles.`
-          : `${ids.length} de ${json.total} imágenes no están en Cloudinary.`
+        partes.length === 0
+          ? `Todo en orden: ${json.total} diseños disponibles y listos para imprimir.`
+          : `De ${json.total} diseños: ${partes.join(", ")}.`
       );
     } catch (e) {
       setVerifyMsg(e instanceof Error ? e.message : "Falló la verificación");
@@ -606,6 +638,26 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
                         <Loader2 size={24} className="animate-spin text-paper" />
                       </div>
                     )}
+
+                    {/* Se avisa antes de guardar, que es cuando todavía se
+                        puede reemplazar el archivo por uno mejor. */}
+                    {item.warnings && item.warnings.length > 0 && (
+                      <span
+                        title={[
+                          item.warnings.includes("fondo")
+                            ? "No tiene fondo transparente: se va a estampar el recuadro"
+                            : null,
+                          item.warnings.includes("resolucion")
+                            ? "Poca resolución: puede salir borroso"
+                            : null,
+                        ]
+                          .filter(Boolean)
+                          .join(". ")}
+                        className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-paper"
+                      >
+                        <AlertTriangle size={11} />
+                      </span>
+                    )}
                   </div>
 
                   <div className="mt-2.5">
@@ -760,6 +812,19 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
             {filteredDesigns.map((d) => {
               const isSelected = selectedIds.includes(d.id);
               const isBroken = brokenIds?.includes(d.id) ?? false;
+              const problemas = quality[d.id] ?? [];
+              const aviso = problemas.length
+                ? [
+                    problemas.includes("fondo")
+                      ? "No tiene fondo transparente: se va a estampar el recuadro"
+                      : null,
+                    problemas.includes("resolucion")
+                      ? "Poca resolución: puede salir borroso"
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join(". ")
+                : null;
               return (
                 <div
                   key={d.id}
@@ -794,6 +859,16 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
 
                   <div className="relative aspect-square overflow-hidden rounded-lg bg-accent-soft">
                     <Image src={d.image_url} alt={d.name} fill className="object-contain" />
+
+                    {aviso && !isBroken && (
+                      <span
+                        title={aviso}
+                        className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-accent text-paper"
+                      >
+                        <AlertTriangle size={11} />
+                      </span>
+                    )}
+
                     {isBroken && (
                       <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-dark/75 px-2 text-center">
                         <AlertTriangle size={18} className="text-lime" />
