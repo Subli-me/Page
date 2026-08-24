@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import clsx from "clsx";
 import {
@@ -78,6 +78,7 @@ export function OrderWizard({
   confirmationTitle: string;
   confirmationMessage: string;
 }) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const preselected = searchParams.get("producto");
 
@@ -280,7 +281,9 @@ export function OrderWizard({
     !!size && (productColors.length === 0 || !!color),
     allZonesHaveImage,
     lines.length > 0,
-    contact.name.length > 1 && contact.email.includes("@"),
+    contact.name.length > 1 &&
+      contact.email.includes("@") &&
+      contact.phone.replace(/\D/g, "").length >= 8,
   ][step];
 
   // Un botón apagado sin explicación deja al cliente sin saber qué falta. Acá
@@ -303,7 +306,9 @@ export function OrderWizard({
         "Agregá al menos una prenda al pedido.",
         contact.name.length <= 1
           ? "Escribí tu nombre para poder confirmar."
-          : "Escribí un email válido para poder confirmar.",
+          : !contact.email.includes("@")
+            ? "Escribí un email válido para poder confirmar."
+            : "Dejanos tu WhatsApp: es por donde te vamos a escribir.",
       ][step];
 
   function addZone(key: string) {
@@ -392,7 +397,8 @@ export function OrderWizard({
     if (lines.length === 0) return;
     setStatus("submitting");
     try {
-      setPreviewUrls(await buildPreviews());
+      const previews = await buildPreviews();
+      setPreviewUrls(previews);
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -407,6 +413,7 @@ export function OrderWizard({
               imageUrl: entry.image!.url,
               imagePublicId: entry.image!.publicId,
               designTransform: entry.transform,
+              previewUrl: previews[l.id + ":" + key] ?? null,
             })),
           })),
           customerName: contact.name,
@@ -417,9 +424,16 @@ export function OrderWizard({
       });
       if (!res.ok) throw new Error();
       const json = await res.json();
-      setOrderId(json.order?.id ?? null);
       // El pedido ya esta guardado: el borrador no tiene mas razon de existir.
       clearDraft();
+
+      // La confirmacion vive en su propia pagina, que se puede volver a abrir.
+      // Antes vivia solo en memoria: recargar dejaba al cliente sin forma de
+      // avisarnos, y al pedido huerfano en el panel.
+      if (json.order?.id) {
+        router.push(`/pedido/${json.order.id}`);
+        return;
+      }
       setStatus("done");
     } catch {
       setStatus("error");
@@ -488,7 +502,8 @@ export function OrderWizard({
         </div>
         <h2 className="font-display text-3xl">{confirmationTitle}</h2>
         <p className="mt-3 text-ink-soft">
-          {confirmationMessage} Te escribimos a <strong>{contact.email}</strong>.
+          {confirmationMessage} Te escribimos por WhatsApp al{" "}
+          <strong>{contact.phone}</strong>.
         </p>
 
         <div className="mx-auto mt-8 max-w-md rounded-xl border border-line bg-paper px-6 py-5">
@@ -958,7 +973,7 @@ export function OrderWizard({
                   onChange={(e) => setContact({ ...contact, email: e.target.value })}
                 />
               </Field>
-              <Field label="Teléfono (opcional)">
+              <Field label="WhatsApp">
                 <input
                   className="input"
                   value={contact.phone}

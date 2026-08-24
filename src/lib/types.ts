@@ -186,6 +186,8 @@ export type OrderItem = {
   image_url: string;
   image_public_id: string;
   design_transform: { tx: number; ty: number; scale: number; rotation: number } | null;
+  /** Como quedo la prenda con el diseno puesto. Falta si no se pudo componer. */
+  preview_url: string | null;
   created_at: string;
 };
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Move, RotateCw } from "lucide-react";
+import { AlertTriangle, Move, RotateCw } from "lucide-react";
 
 /**
  * Cómo quedó acomodado el diseño dentro de la zona de estampado.
@@ -34,6 +34,8 @@ export function DesignAdjuster({
   // píxeles, así que medimos la zona y nos mantenemos al tanto de sus cambios.
   // De paso, la posición aguanta que se redimensione la ventana.
   const [frame, setFrame] = useState({ w: 0, h: 0 });
+  // Tamano real del archivo: define la proporcion del diseno en la zona.
+  const [natural, setNatural] = useState({ w: 1, h: 1 });
 
   useEffect(() => {
     const el = frameRef.current;
@@ -121,10 +123,33 @@ export function DesignAdjuster({
     window.addEventListener("pointerup", onUp);
   }
 
+  // Cuanto sobresale el diseno de la zona imprimible. Lo que se sale se
+  // recorta, asi que conviene decirlo antes de confirmar y no despues.
+  const seSale = (() => {
+    if (!frame.w || !frame.h) return false;
+    const ancho = frame.w * 0.55 * t.scale;
+    const alto = ancho * (natural.h / (natural.w || 1));
+    // Con rotacion el diseno ocupa la caja que lo envuelve.
+    const rad = (t.rotation * Math.PI) / 180;
+    const anchoRot = Math.abs(ancho * Math.cos(rad)) + Math.abs(alto * Math.sin(rad));
+    const altoRot = Math.abs(ancho * Math.sin(rad)) + Math.abs(alto * Math.cos(rad));
+
+    const cx = frame.w / 2 + t.tx * frame.w;
+    const cy = frame.h / 2 + t.ty * frame.h;
+    const margen = 1; // tolerancia para no avisar por un pixel
+
+    return (
+      cx - anchoRot / 2 < -margen ||
+      cy - altoRot / 2 < -margen ||
+      cx + anchoRot / 2 > frame.w + margen ||
+      cy + altoRot / 2 > frame.h + margen
+    );
+  })();
+
   return (
     <div
       ref={frameRef}
-      className="absolute overflow-hidden"
+      className="absolute"
       style={{
         left: `${overlay.x}%`,
         top: `${overlay.y}%`,
@@ -132,24 +157,63 @@ export function DesignAdjuster({
         height: `${overlay.h}%`,
       }}
     >
-      <div className="pointer-events-none absolute inset-0 border border-dashed border-paper/50" />
-      <div
-        className="absolute left-1/2 top-1/2 w-[55%] cursor-move touch-none select-none"
-        style={{
-          transform: `translate(-50%, -50%) translate(${t.tx * frame.w}px, ${t.ty * frame.h}px) rotate(${t.rotation}deg) scale(${t.scale})`,
-        }}
-        onPointerDown={startMove}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={designUrl} alt="Tu diseño" className="pointer-events-none block h-auto w-full" draggable={false} />
-        <div
-          onPointerDown={startTransform}
-          className="absolute -bottom-2.5 -right-2.5 flex h-6 w-6 cursor-alias touch-none items-center justify-center rounded-full border-2 border-panel bg-accent text-paper shadow-sm"
-        >
-          <RotateCw size={11} />
+      {/* El area imprimible tiene que verse sobre cualquier color de prenda:
+          con un solo borde claro desaparecia justo sobre las blancas, que es
+          cuando mas falta hace. Dos trazos superpuestos, uno oscuro y uno
+          claro, se leen sobre los dos fondos. */}
+      <div className="pointer-events-none absolute inset-0 border border-dashed border-ink/40" />
+      <div className="pointer-events-none absolute inset-px border border-dashed border-paper/70" />
+
+      {seSale && (
+        <div className="pointer-events-none absolute inset-x-0 -top-7 flex justify-center">
+          <span className="inline-flex items-center gap-1 rounded-full bg-accent px-2.5 py-1 text-[10px] font-medium text-paper shadow-sm">
+            <AlertTriangle size={10} />
+            Se va a recortar
+          </span>
         </div>
-        <div className="pointer-events-none absolute -left-2.5 -top-2.5 flex h-6 w-6 items-center justify-center rounded-full border-2 border-panel bg-ink/70 text-paper">
-          <Move size={11} />
+      )}
+
+      {/* Lo que se sale del area se recorta, igual que en la prenda. */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div
+          className="group absolute left-1/2 top-1/2 w-[55%] cursor-move touch-none select-none"
+          style={{
+            transform: `translate(-50%, -50%) translate(${t.tx * frame.w}px, ${t.ty * frame.h}px) rotate(${t.rotation}deg) scale(${t.scale})`,
+          }}
+          onPointerDown={startMove}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={designUrl}
+            alt="Tu diseño"
+            className="pointer-events-none block h-auto w-full"
+            draggable={false}
+            onLoad={(e) =>
+              setNatural({
+                w: e.currentTarget.naturalWidth,
+                h: e.currentTarget.naturalHeight,
+              })
+            }
+          />
+
+          <div
+            onPointerDown={startTransform}
+            title="Arrastrá para agrandar o rotar"
+            className="absolute -bottom-2.5 -right-2.5 flex h-6 w-6 cursor-alias touch-none items-center justify-center rounded-full border-2 border-panel bg-accent text-paper shadow-sm"
+          >
+            <RotateCw size={11} />
+          </div>
+
+          {/* Antes este tirador era decorativo: tenia los eventos apagados, asi
+              que arrastrarlo no hacia nada mientras el resto del diseno si se
+              movia. Ahora mueve, que es lo que su forma promete. */}
+          <div
+            onPointerDown={startMove}
+            title="Arrastrá para mover"
+            className="absolute -left-2.5 -top-2.5 flex h-6 w-6 cursor-move touch-none items-center justify-center rounded-full border-2 border-panel bg-ink text-paper shadow-sm"
+          >
+            <Move size={11} />
+          </div>
         </div>
       </div>
     </div>

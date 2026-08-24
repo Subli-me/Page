@@ -12,6 +12,8 @@ const printSchema = z.object({
     .object({ tx: z.number(), ty: z.number(), scale: z.number(), rotation: z.number() })
     .optional()
     .nullable(),
+  /** Como quedo la prenda con el diseno puesto. Puede faltar. */
+  previewUrl: z.string().url().optional().nullable(),
 });
 
 /** Una prenda del pedido, con sus estampados. */
@@ -27,7 +29,8 @@ const orderSchema = z.object({
   lines: z.array(lineSchema).min(1).max(50),
   customerName: z.string().min(2),
   customerEmail: z.string().email(),
-  customerPhone: z.string().optional().nullable(),
+  // Obligatorio: WhatsApp es el canal por el que se responde el pedido.
+  customerPhone: z.string().min(8),
   notes: z.string().optional().nullable(),
 });
 
@@ -89,7 +92,7 @@ export async function POST(req: Request) {
     .insert({
       customer_name: data.customerName,
       customer_email: data.customerEmail,
-      customer_phone: data.customerPhone ?? null,
+      customer_phone: data.customerPhone,
       notes: data.notes ?? null,
       total_price: totalPrice,
       // Las columnas viejas quedan con la primera prenda para que cualquier
@@ -137,6 +140,7 @@ export async function POST(req: Request) {
         image_url: p.imageUrl,
         image_public_id: p.imagePublicId,
         design_transform: p.designTransform ?? null,
+        preview_url: p.previewUrl ?? null,
       }))
     )
   );

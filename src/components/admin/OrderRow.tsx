@@ -22,6 +22,8 @@ type ItemWithZone = {
   image_url: string;
   print_zone_key: string;
   design_transform?: { tx: number; ty: number; scale: number; rotation: number } | null;
+  /** Como quedo la prenda con el diseno puesto. */
+  preview_url?: string | null;
   print_zones: { label: string } | null;
 };
 
@@ -274,6 +276,25 @@ export function OrderRow({ order }: { order: OrderWithLines }) {
                         key={item.id}
                         className="flex flex-wrap items-center gap-3 rounded-lg border border-line bg-panel p-2.5"
                       >
+                        {/* La composicion dice como lo quiere el cliente; el
+                            archivo suelto es lo que se manda a imprimir. */}
+                        {item.preview_url && (
+                          <a
+                            href={item.preview_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            title="Ver como queda en la prenda"
+                            className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-line bg-accent-soft"
+                          >
+                            <Image
+                              src={item.preview_url}
+                              alt={`${zoneName(item)} en la prenda`}
+                              fill
+                              className="object-contain"
+                            />
+                          </a>
+                        )}
+
                         <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-accent-soft">
                           <Image
                             src={item.image_url}
