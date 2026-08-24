@@ -110,6 +110,8 @@ export const DEMO_SETTINGS: SiteSettings = {
   hero_cta_label: "Crear mi diseño",
   hero_image_url: "https://images.unsplash.com/photo-1780566035913-9233ca20dc29?w=1200&q=80",
 
+  hero_images: [],
+
   marquee_text: "REMERAS · BUZOS · CHOMBAS · DTF",
 
   step1_title: "Elegí la prenda",
@@ -135,6 +137,9 @@ export const DEMO_SETTINGS: SiteSettings = {
   ],
   footer_newsletter_title: "Newsletter",
   footer_newsletter_subtitle: "Recibí ofertas exclusivas y novedades directamente en tu email.",
+
+  footer_info_title: "Información",
+  footer_categories_title: "Categorías",
 
   footer_info_links: [
     { label: "Inicio", href: "/" },

@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { SiteSettings } from "@/lib/types";
 import { EditableText } from "./EditableText";
 import { EditableColor } from "./EditableColor";
+import { HeroImagesAdmin } from "./HeroImagesAdmin";
 import { ImageUploader, type UploadedImage } from "@/components/order/ImageUploader";
 
 export function SiteSettingsAdmin({ initial }: { initial: SiteSettings }) {
@@ -59,11 +60,25 @@ export function SiteSettingsAdmin({ initial }: { initial: SiteSettings }) {
           <EditableText label="Subtítulo" value={settings.hero_subtitle} onSave={(v) => save("hero_subtitle", v)} multiline />
         </div>
         <div className="mt-6">
-          <p className="mb-3 text-sm font-medium">Imagen del hero</p>
-          <ImageUploader
-              signatureEndpoint="/api/admin/upload-signature"
-            value={settings.hero_image_url ? { url: settings.hero_image_url, publicId: "" } : null}
-            onChange={(img) => save("hero_image_url", img?.url ?? null)}
+          <p className="mb-1 text-sm font-medium">Fotos del hero</p>
+          <HeroImagesAdmin
+            initial={settings.hero_images ?? []}
+            onSave={(imgs) => save("hero_images", imgs)}
+          />
+        </div>
+      </Section>
+
+      <Section title="Títulos de las columnas del pie">
+        <div className="grid gap-6 sm:grid-cols-2">
+          <EditableText
+            label="Columna de información"
+            value={settings.footer_info_title}
+            onSave={(v) => save("footer_info_title", v)}
+          />
+          <EditableText
+            label="Columna de categorías"
+            value={settings.footer_categories_title}
+            onSave={(v) => save("footer_categories_title", v)}
           />
         </div>
       </Section>

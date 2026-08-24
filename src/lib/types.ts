@@ -133,6 +133,8 @@ export type SiteSettings = {
   hero_subtitle: string;
   hero_cta_label: string;
   hero_image_url: string | null;
+  /** Fotos del carrusel del hero, en orden. */
+  hero_images: { url: string }[];
 
   marquee_text: string;
 
@@ -157,6 +159,8 @@ export type SiteSettings = {
   footer_newsletter_subtitle: string;
 
   // Footer dynamic lists
+  footer_info_title: string;
+  footer_categories_title: string;
   footer_info_links: { label: string; href: string }[];
   footer_categories_links: { label: string; href: string }[];
 

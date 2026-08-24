@@ -7,17 +7,33 @@ import { motion, AnimatePresence } from "framer-motion";
 import type { SiteSettings } from "@/lib/types";
 import { EditableText } from "./edit/EditableText";
 
-const HERO_IMAGES = [
-  "/hero-1.png",
-  "/hero-2.jpg",
-  "/hero-3.png",
-];
+/**
+ * Fotos que trae el proyecto, como último respaldo.
+ *
+ * El hero es lo primero que se ve: si nadie cargó imágenes todavía, es mejor
+ * mostrar estas que dejar el bloque vacío.
+ */
+const HERO_POR_DEFECTO = ["/hero-1.png", "/hero-2.jpg", "/hero-3.png"];
 
 interface HeroProps {
   settings: SiteSettings;
 }
 
+/**
+ * De dónde salen las fotos del hero, en orden de preferencia.
+ *
+ * `hero_image_url` entra en el medio porque ya existía y se podía editar desde
+ * el panel sin que el hero la usara: quien la cambiaba no veía ningún efecto.
+ */
+function imagenesDelHero(settings: SiteSettings): string[] {
+  const cargadas = (settings.hero_images ?? []).map((i) => i.url).filter(Boolean);
+  if (cargadas.length > 0) return cargadas;
+  if (settings.hero_image_url) return [settings.hero_image_url];
+  return HERO_POR_DEFECTO;
+}
+
 export function Hero({ settings }: HeroProps) {
+  const HERO_IMAGES = imagenesDelHero(settings);
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {

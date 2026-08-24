@@ -131,7 +131,7 @@ export async function Footer() {
           {/* Col 2 — Información */}
           {infoLinks.length > 0 && (
             <div className="flex flex-col gap-4">
-              <h3 className="text-sm font-semibold tracking-wide text-white">Información</h3>
+              <h3 className="text-sm font-semibold tracking-wide text-white">{settings.footer_info_title}</h3>
               <nav className="flex flex-col gap-2.5">
                 {infoLinks.map((item, idx) => (
                   <Link
@@ -149,7 +149,7 @@ export async function Footer() {
           {/* Col 3 — Categorías */}
           {categoryLinks.length > 0 && (
             <div className="flex flex-col gap-4">
-              <h3 className="text-sm font-semibold tracking-wide text-white">Categorías</h3>
+              <h3 className="text-sm font-semibold tracking-wide text-white">{settings.footer_categories_title}</h3>
               <nav className="flex flex-col gap-2.5">
                 {categoryLinks.map((item, idx) => (
                   <Link
