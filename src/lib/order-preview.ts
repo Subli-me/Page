@@ -110,6 +110,8 @@ export async function uploadPreview(blob: Blob): Promise<string | null> {
     form.append("timestamp", sig.timestamp);
     form.append("signature", sig.signature);
     form.append("folder", sig.folder);
+    // Va firmado, así que tiene que viajar tal cual vino.
+    if (sig.allowed_formats) form.append("allowed_formats", sig.allowed_formats);
 
     const res = await fetch(`https://api.cloudinary.com/v1_1/${sig.cloudName}/image/upload`, {
       method: "POST",

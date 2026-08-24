@@ -250,6 +250,7 @@ export function MockupZoneEditor({ mockup, imageUrl, onSave, onClose }: MockupZo
               Imagen del Mockup
             </p>
             <ImageUploader
+              signatureEndpoint="/api/admin/upload-signature"
               value={null}
               onChange={(img) => img && setPreviewSrc(img.url)}
               label="Arrastrá o elegí imagen"

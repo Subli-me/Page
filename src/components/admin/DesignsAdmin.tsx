@@ -163,7 +163,7 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
     try {
       const optimizedFile = await convertToWebP(file, { maxDimension: 2400, quality: 0.85 }).catch(() => file);
 
-      const sigRes = await fetch("/api/upload-signature", { method: "POST" });
+      const sigRes = await fetch("/api/admin/upload-signature", { method: "POST" });
       const sig = await sigRes.json();
 
       const form = new FormData();

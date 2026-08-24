@@ -34,6 +34,7 @@ export function SiteSettingsAdmin({ initial }: { initial: SiteSettings }) {
             Logo en imagen (opcional — si lo subís, reemplaza al texto en la barra de navegación)
           </p>
           <ImageUploader
+              signatureEndpoint="/api/admin/upload-signature"
             value={logoImage}
             onChange={(img) => save("logo_url", img?.url ?? null)}
           />
@@ -60,6 +61,7 @@ export function SiteSettingsAdmin({ initial }: { initial: SiteSettings }) {
         <div className="mt-6">
           <p className="mb-3 text-sm font-medium">Imagen del hero</p>
           <ImageUploader
+              signatureEndpoint="/api/admin/upload-signature"
             value={settings.hero_image_url ? { url: settings.hero_image_url, publicId: "" } : null}
             onChange={(img) => save("hero_image_url", img?.url ?? null)}
           />

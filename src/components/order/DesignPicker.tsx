@@ -78,7 +78,7 @@ export function DesignPicker({
 
   if (designs.length === 0) {
     // Sin catálogo cargado, solo se puede subir imagen propia.
-    return <ImageUploader value={value} onChange={onChange} />;
+    return <ImageUploader value={value} onChange={onChange} checkWarnings />;
   }
 
   return (
@@ -103,7 +103,7 @@ export function DesignPicker({
       </div>
 
       {tab === "upload" ? (
-        <ImageUploader value={value} onChange={onChange} />
+        <ImageUploader value={value} onChange={onChange} checkWarnings />
       ) : (
         <div className="space-y-3">
           <div className="relative">

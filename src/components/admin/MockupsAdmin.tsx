@@ -117,7 +117,7 @@ export function MockupsAdmin({
               foto real de la prenda (frente, espalda, manga — según corresponda)
               y después vas a poder marcar dónde va el diseño.
             </p>
-            <ImageUploader value={null} onChange={handleUpload} />
+            <ImageUploader signatureEndpoint="/api/admin/upload-signature" value={null} onChange={handleUpload} />
           </div>
         )}
       </div>

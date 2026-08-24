@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { Upload, X, Loader2 } from "lucide-react";
+import { Upload, X, Loader2, AlertTriangle } from "lucide-react";
 import clsx from "clsx";
 import { MediaDisplay, isVideoUrl } from "../MediaDisplay";
+import { checkDesignImage, type ImageWarning } from "@/lib/image-check";
 
 export type UploadedImage = { url: string; publicId: string };
 
@@ -12,19 +13,37 @@ export function ImageUploader({
   onChange,
   accept = "image/*,video/*",
   label = "Arrastrá tu imagen o video, o hacé click",
+  signatureEndpoint = "/api/upload-signature",
+  checkWarnings = false,
 }: {
   value: UploadedImage | null;
   onChange: (img: UploadedImage | null) => void;
   accept?: string;
   label?: string;
+  /**
+   * De dónde sacar la firma. Por defecto la pública, que es la del pedido.
+   * El panel usa la de admin, que pide sesión y escribe en otra carpeta.
+   */
+  signatureEndpoint?: string;
+  /**
+   * Revisar resolución y fondo del archivo. Se usa en el pedido, donde el
+   * archivo termina impreso; no en el panel, donde se suben fotos y mockups.
+   */
+  checkWarnings?: boolean;
 }) {
   const [isUploading, setIsUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [warnings, setWarnings] = useState<ImageWarning[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const upload = useCallback(async (file: File) => {
     setError(null);
+    setWarnings([]);
+
+    // Avisamos lo que puede salir mal en la prenda, pero no frenamos: hay
+    // disenos que a proposito llevan fondo o son chicos.
+    if (checkWarnings) checkDesignImage(file).then(setWarnings);
     const isImage = file.type.startsWith("image/");
     const isVideo = file.type.startsWith("video/");
 
@@ -34,8 +53,9 @@ export function ImageUploader({
     }
     setIsUploading(true);
     try {
-      const sigRes = await fetch("/api/upload-signature", { method: "POST" });
+      const sigRes = await fetch(signatureEndpoint, { method: "POST" });
       const sig = await sigRes.json();
+      if (!sigRes.ok) throw new Error(sig.error ?? "No se pudo subir");
 
       const form = new FormData();
       form.append("file", file);
@@ -43,6 +63,8 @@ export function ImageUploader({
       form.append("timestamp", sig.timestamp);
       form.append("signature", sig.signature);
       form.append("folder", sig.folder);
+      // Va firmado, así que tiene que viajar tal cual vino.
+      if (sig.allowed_formats) form.append("allowed_formats", sig.allowed_formats);
 
       const resourceType = isVideo ? "video" : "auto";
 
@@ -53,15 +75,35 @@ export function ImageUploader({
       if (!res.ok) throw new Error("Falló la subida");
       const json = await res.json();
       onChange({ url: json.secure_url, publicId: json.public_id });
-    } catch {
-      setError("No se pudo subir el archivo. Probá de nuevo.");
+    } catch (e) {
+      setError(e instanceof Error && e.message !== "No se pudo subir"
+        ? e.message
+        : "No se pudo subir el archivo. Probá de nuevo.");
     } finally {
       setIsUploading(false);
     }
-  }, [onChange]);
+  }, [onChange, signatureEndpoint, checkWarnings]);
+
+  const avisos = warnings.length > 0 && (
+    <div className="mt-3 space-y-2">
+      {warnings.map((w) => (
+        <div
+          key={w.kind}
+          className="flex gap-2 rounded-xl border border-accent/30 bg-accent/5 px-3 py-2.5"
+        >
+          <AlertTriangle size={15} className="mt-0.5 shrink-0 text-accent" />
+          <div>
+            <p className="text-xs font-medium text-ink">{w.title}</p>
+            <p className="mt-0.5 text-xs text-ink-soft">{w.detail}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 
   if (value) {
     return (
+      <div>
       <div className="group relative overflow-hidden rounded-2xl border border-line">
         <div className="relative aspect-video sm:aspect-4/3">
           <MediaDisplay src={value.url} alt="Portada de la prenda" className="object-contain bg-panel" />
@@ -90,6 +132,8 @@ export function ImageUploader({
             if (file) upload(file);
           }}
         />
+      </div>
+      {avisos}
       </div>
     );
   }
@@ -131,6 +175,7 @@ export function ImageUploader({
         />
       </div>
       {error && <p className="mt-3 text-center text-sm text-accent">{error}</p>}
+      {avisos}
     </div>
   );
 }

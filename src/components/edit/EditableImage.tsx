@@ -23,7 +23,7 @@ export function EditableImage({
   async function handleFile(file: File) {
     setUploading(true);
     try {
-      const sigRes = await fetch("/api/upload-signature", { method: "POST" });
+      const sigRes = await fetch("/api/admin/upload-signature", { method: "POST" });
       const sig = await sigRes.json();
 
       const form = new FormData();

@@ -790,6 +790,7 @@ function ProductRow({
                   </p>
                   <div className="w-full">
                     <ImageUploader
+              signatureEndpoint="/api/admin/upload-signature"
                       value={product.image_url ? { url: product.image_url, publicId: "" } : null}
                       onChange={(img) => onSaveField(product.id, "image_url", img?.url ?? null)}
                       label="Arrastrá o elegí foto/video"
