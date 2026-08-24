@@ -209,7 +209,9 @@ export function WorkShowcase({
                 width: `calc((100% - ${(visibles - 1) * 16}px) / ${visibles})`,
               }}
             >
-              <div className="relative aspect-4/3">
+              {/* Vertical: las fotos de prendas casi siempre lo son, y con una
+                  proporción horizontal se recortaba justo la prenda. */}
+              <div className="relative aspect-3/4">
                 <ProtectedImage
                   src={w.image_url}
                   alt={w.caption ?? "Prenda estampada"}
@@ -243,11 +245,6 @@ export function WorkShowcase({
           ))}
         </div>
 
-        {hayCarrusel && (
-          <p className="mt-4 text-center text-xs text-ink-soft">
-            {works.length} trabajos{autoplay ? " · pasan solos, o deslizá vos" : " · deslizá para ver más"}
-          </p>
-        )}
       </div>
     </section>
   );
