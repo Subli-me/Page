@@ -9,6 +9,7 @@ export function ZoneSelector({
   addedZones,
   activeZone,
   hasImage,
+  extraFor,
   onAdd,
   onRemove,
   onSetActive,
@@ -17,6 +18,11 @@ export function ZoneSelector({
   addedZones: string[];
   activeZone: string | null;
   hasImage: (key: string) => boolean;
+  /**
+   * Lo que suma esta zona en el estado actual del pedido: su propio adicional
+   * más el recargo por combinación, si agregarla completa un par.
+   */
+  extraFor: (key: string) => number;
   onAdd: (key: string) => void;
   onRemove: (key: string) => void;
   onSetActive: (key: string) => void;
@@ -26,6 +32,7 @@ export function ZoneSelector({
       {zones.map((z) => {
         const added = addedZones.includes(z.key);
         const active = activeZone === z.key;
+        const extra = extraFor(z.key);
         return (
           <button
             key={z.key}
@@ -50,9 +57,9 @@ export function ZoneSelector({
               <Plus size={13} />
             )}
             {z.label}
-            {z.extra_price > 0 && (
+            {extra > 0 && (
               <span className={clsx("text-xs", active ? "text-paper/70" : "text-ink-soft")}>
-                +${z.extra_price.toLocaleString("es-AR")}
+                +${extra.toLocaleString("es-AR")}
               </span>
             )}
             {added && (

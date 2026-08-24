@@ -129,6 +129,33 @@ export function OrderWizard({
 
   const total = product ? breakdown.total : 0;
 
+  /**
+   * Lo que suma agregar (o tener) una zona, para mostrarlo en su propio chip.
+   *
+   * El recargo por combinacion es del par, no de cada zona: si lo mostraramos
+   * en las dos pareceria que se cobra dos veces. Se lo cargamos a la que
+   * completa el par, que ademas es la que responde la pregunta que se esta
+   * haciendo el cliente: cuanto me sale sumar esta.
+   */
+  function zoneExtra(key: string): number {
+    const propio = Number(printZones.find((z) => z.key === key)?.extra_price ?? 0);
+    // `prints` conserva el orden en que se agregaron las zonas.
+    const idx = addedZoneKeys.indexOf(key);
+
+    const porCombo = zoneCombos.reduce((sum, c) => {
+      const otra =
+        c.zone_a_key === key ? c.zone_b_key : c.zone_b_key === key ? c.zone_a_key : null;
+      if (!otra) return sum;
+
+      const idxOtra = addedZoneKeys.indexOf(otra);
+      if (idxOtra === -1) return sum; // sin la otra zona el recargo no aplica
+      if (idx === -1) return sum + Number(c.extra_price); // agregarla completaria el par
+      return idxOtra < idx ? sum + Number(c.extra_price) : sum; // esta completo el par
+    }, 0);
+
+    return propio + porCombo;
+  }
+
   /** Precio de una prenda ya agregada, con la misma cuenta que usa el servidor. */
   const lineBreakdown = (l: CartLine) =>
     buildOrderBreakdown({
@@ -713,30 +740,12 @@ export function OrderWizard({
                   addedZones={addedZoneKeys}
                   activeZone={activeZone}
                   hasImage={(key) => !!prints[key]?.image}
+                  extraFor={zoneExtra}
                   onAdd={addZone}
                   onRemove={removeZone}
                   onSetActive={setActiveZone}
                 />
 
-                {/* Que el recargo por combinar zonas no aparezca recién en el
-                    total: acá se ve en el momento en que se activa. */}
-                {activeCombos.map((c) => {
-                  const a = printZones.find((z) => z.key === c.zone_a_key)?.label ?? c.zone_a_key;
-                  const b = printZones.find((z) => z.key === c.zone_b_key)?.label ?? c.zone_b_key;
-                  return (
-                    <p
-                      key={c.id}
-                      className="mt-3 rounded-lg border border-line bg-panel px-3 py-2 text-xs text-ink-soft"
-                    >
-                      Estampar <strong className="text-ink">{a}</strong> y{" "}
-                      <strong className="text-ink">{b}</strong> juntos suma{" "}
-                      <strong className="text-ink">
-                        ${Number(c.extra_price).toLocaleString("es-AR")}
-                      </strong>{" "}
-                      al total.
-                    </p>
-                  );
-                })}
               </div>
 
               {activeZone ? (
