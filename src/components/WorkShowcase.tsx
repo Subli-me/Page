@@ -1,69 +1,171 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { Quote } from "lucide-react";
+import { ChevronLeft, ChevronRight, Quote } from "lucide-react";
+import clsx from "clsx";
 import type { WorkShowcase as Work } from "@/lib/types";
-import { Reveal } from "./Reveal";
 
 /**
- * Trabajos ya entregados.
+ * Trabajos ya entregados, en carrusel.
  *
  * Es la prueba de que lo que se promete existe: alguien que nunca compró ve
  * prendas reales, no maquetas. Las que tienen comentario del cliente lo
- * muestran encima de la foto, porque una foto con testimonio pesa más que las
+ * muestran debajo de la foto, porque una foto con testimonio pesa más que las
  * dos cosas por separado.
+ *
+ * El desplazamiento es scroll nativo con anclaje, no una animación propia: así
+ * el gesto del dedo en el celular funciona sin que haya que programarlo, y con
+ * el teclado también se navega.
  */
-export function WorkShowcase({ works }: { works: Work[] }) {
+export function WorkShowcase({ works, perView = 3 }: { works: Work[]; perView?: number }) {
+  const pistaRef = useRef<HTMLDivElement>(null);
+  const [alcanzables, setAlcanzables] = useState({ atras: false, adelante: false });
+
+  // Cuántas entran de verdad. En pantallas chicas se muestran menos aunque la
+  // configuración diga más: tres tarjetas en un celular no se leen.
+  const [visibles, setVisibles] = useState(1);
+
+  useEffect(() => {
+    const calcular = () => {
+      const ancho = window.innerWidth;
+      const cabe = ancho < 640 ? 1 : ancho < 1024 ? 2 : perView;
+      setVisibles(Math.min(cabe, perView));
+    };
+    calcular();
+    window.addEventListener("resize", calcular);
+    return () => window.removeEventListener("resize", calcular);
+  }, [perView]);
+
+  // Los botones se apagan en los extremos en vez de quedar sin efecto.
+  useEffect(() => {
+    const pista = pistaRef.current;
+    if (!pista) return;
+
+    const revisar = () => {
+      const { scrollLeft, scrollWidth, clientWidth } = pista;
+      setAlcanzables({
+        atras: scrollLeft > 8,
+        adelante: scrollLeft + clientWidth < scrollWidth - 8,
+      });
+    };
+    revisar();
+
+    pista.addEventListener("scroll", revisar, { passive: true });
+    window.addEventListener("resize", revisar);
+    return () => {
+      pista.removeEventListener("scroll", revisar);
+      window.removeEventListener("resize", revisar);
+    };
+  }, [works.length, visibles]);
+
+  function mover(dir: -1 | 1) {
+    const pista = pistaRef.current;
+    if (!pista) return;
+    // Se avanza una pantalla completa, no una tarjeta: así no queda una mitad
+    // colgando al final del recorrido.
+    pista.scrollBy({ left: dir * pista.clientWidth, behavior: "smooth" });
+  }
+
   // Sin trabajos cargados la sección no existe: una galería vacía dice lo
   // contrario de lo que se busca.
   if (works.length === 0) return null;
 
+  const hayCarrusel = works.length > visibles;
+
   return (
     <section id="trabajos" className="border-t border-line/70 bg-panel">
       <div className="mx-auto max-w-7xl px-6 py-16 sm:py-24">
-        <Reveal>
-          <h2 className="font-display text-4xl italic tracking-tight">Trabajos hechos</h2>
-          <p className="mt-2 max-w-lg text-sm text-ink-soft">
-            Prendas que ya entregamos. Así quedan de verdad, fuera de la
-            pantalla.
-          </p>
-        </Reveal>
+        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2 className="font-display text-4xl italic tracking-tight">Trabajos hechos</h2>
+            <p className="mt-2 max-w-lg text-sm text-ink-soft">
+              Prendas que ya entregamos. Así quedan de verdad, fuera de la
+              pantalla.
+            </p>
+          </div>
 
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {works.map((w, i) => (
-            <Reveal key={w.id} delay={i * 0.05}>
-              <figure className="group relative overflow-hidden rounded-2xl border border-line bg-paper">
-                <div className="relative aspect-4/3">
-                  <Image
-                    src={w.image_url}
-                    alt={w.caption ?? "Prenda estampada"}
-                    fill
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 380px"
-                    className="object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                </div>
+          {hayCarrusel && (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => mover(-1)}
+                disabled={!alcanzables.atras}
+                aria-label="Ver anteriores"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-line transition-colors hover:border-ink disabled:opacity-30 disabled:hover:border-line"
+              >
+                <ChevronLeft size={17} />
+              </button>
+              <button
+                type="button"
+                onClick={() => mover(1)}
+                disabled={!alcanzables.adelante}
+                aria-label="Ver siguientes"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-line transition-colors hover:border-ink disabled:opacity-30 disabled:hover:border-line"
+              >
+                <ChevronRight size={17} />
+              </button>
+            </div>
+          )}
+        </div>
 
-                {(w.caption || w.quote) && (
-                  <figcaption className="p-4">
-                    {w.caption && <p className="text-sm font-medium">{w.caption}</p>}
+        <div
+          ref={pistaRef}
+          className={clsx(
+            "flex gap-4 overflow-x-auto pb-2",
+            // La barra se oculta pero el scroll sigue existiendo: en celular se
+            // arrastra con el dedo, y con teclado se navega igual.
+            "scrollbar-none",
+            hayCarrusel && "snap-x snap-mandatory"
+          )}
+        >
+          {works.map((w) => (
+            <figure
+              key={w.id}
+              className="group w-full shrink-0 snap-start overflow-hidden rounded-2xl border border-line bg-paper"
+              style={{
+                // El ancho sale de cuántas entran, descontando la separación.
+                width: `calc((100% - ${(visibles - 1) * 16}px) / ${visibles})`,
+              }}
+            >
+              <div className="relative aspect-4/3">
+                <Image
+                  src={w.image_url}
+                  alt={w.caption ?? "Prenda estampada"}
+                  fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 420px"
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+              </div>
 
-                    {w.quote && (
-                      <blockquote className="mt-2 flex gap-2">
-                        <Quote size={14} className="mt-0.5 shrink-0 text-accent" />
-                        <div>
-                          <p className="text-sm italic text-ink-soft">{w.quote}</p>
-                          {w.customer_name && (
-                            <cite className="mt-1 block text-xs not-italic text-ink-soft/80">
-                              — {w.customer_name}
-                            </cite>
-                          )}
-                        </div>
-                      </blockquote>
-                    )}
-                  </figcaption>
-                )}
-              </figure>
-            </Reveal>
+              {(w.caption || w.quote) && (
+                <figcaption className="p-4">
+                  {w.caption && <p className="text-sm font-medium">{w.caption}</p>}
+
+                  {w.quote && (
+                    <blockquote className="mt-2 flex gap-2">
+                      <Quote size={14} className="mt-0.5 shrink-0 text-accent" />
+                      <div>
+                        <p className="text-sm italic text-ink-soft">{w.quote}</p>
+                        {w.customer_name && (
+                          <cite className="mt-1 block text-xs not-italic text-ink-soft/80">
+                            — {w.customer_name}
+                          </cite>
+                        )}
+                      </div>
+                    </blockquote>
+                  )}
+                </figcaption>
+              )}
+            </figure>
           ))}
         </div>
+
+        {hayCarrusel && (
+          <p className="mt-4 text-center text-xs text-ink-soft">
+            {works.length} trabajos · deslizá para ver más
+          </p>
+        )}
       </div>
     </section>
   );

@@ -109,7 +109,7 @@ export default async function Home({
           </div>
         </section>
 
-        <WorkShowcase works={works} />
+        <WorkShowcase works={works} perView={settings.works_per_view} />
 
         {/* Catálogo de diseños */}
         {designs.length > 0 && (

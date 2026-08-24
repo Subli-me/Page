@@ -33,6 +33,7 @@ const ALLOWED_FIELDS = [
   "pedido_badge",
   "pedido_title",
   "pedido_subtitle",
+  "works_per_view",
   "confirmation_title",
   "confirmation_message",
   "footer_copyright_suffix",

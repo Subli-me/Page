@@ -13,9 +13,25 @@ import { ImageUploader, type UploadedImage } from "@/components/order/ImageUploa
  * La foto es lo único obligatorio: una galería de trabajos reales ya convence
  * sola. El testimonio suma cuando el cliente dijo algo, y no siempre pasa.
  */
-export function WorksAdmin({ initial }: { initial: WorkShowcase[] }) {
+export function WorksAdmin({
+  initial,
+  perView,
+}: {
+  initial: WorkShowcase[];
+  perView: number;
+}) {
   const [works, setWorks] = useState(initial);
   const [subiendo, setSubiendo] = useState(false);
+  const [porVista, setPorVista] = useState(perView);
+
+  async function guardarPorVista(n: number) {
+    setPorVista(n);
+    await fetch("/api/admin/settings", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ works_per_view: n }),
+    });
+  }
 
   async function agregar(img: UploadedImage | null) {
     if (!img) return;
@@ -90,6 +106,30 @@ export function WorksAdmin({ initial }: { initial: WorkShowcase[] }) {
             signatureEndpoint="/api/admin/upload-signature"
             label={subiendo ? "Subiendo..." : "Arrastrá la foto del trabajo, o hacé click"}
           />
+        </div>
+      </section>
+
+      <section>
+        <h2 className="mb-1 font-display text-xl">Cuántos se ven a la vez</h2>
+        <p className="mb-3 max-w-2xl text-sm text-ink-soft">
+          Es el ancho de la vista, no cuántos hay: el resto sigue ahí y se llega
+          deslizando. En celulares se muestra uno solo aunque acá elijas más,
+          porque tres tarjetas no se leen en esa pantalla.
+        </p>
+        <div className="flex gap-2">
+          {[1, 2, 3, 4, 5, 6].map((n) => (
+            <button
+              key={n}
+              type="button"
+              onClick={() => guardarPorVista(n)}
+              className={clsx(
+                "h-10 w-10 rounded-full border text-sm transition-colors",
+                porVista === n ? "border-ink bg-ink text-paper" : "border-line hover:border-ink"
+              )}
+            >
+              {n}
+            </button>
+          ))}
         </div>
       </section>
 

@@ -190,6 +190,9 @@ export type SiteSettings = {
   pedido_title: string;
   pedido_subtitle: string;
 
+  /** Cuántos trabajos se ven a la vez en el carrusel de la portada. */
+  works_per_view: number;
+
   confirmation_title: string;
   confirmation_message: string;
 

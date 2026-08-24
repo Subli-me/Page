@@ -2,10 +2,11 @@ import { WorksAdmin } from "@/components/admin/WorksAdmin";
 import { DemoBanner } from "@/components/admin/DemoBanner";
 import { isDemoMode } from "@/lib/demo-data";
 import { getAllWorks } from "@/lib/works";
+import { getSiteSettings } from "@/lib/settings";
 
 export default async function AdminWorksPage() {
   const demo = isDemoMode();
-  const works = await getAllWorks();
+  const [works, settings] = await Promise.all([getAllWorks(), getSiteSettings()]);
 
   return (
     <div>
@@ -21,7 +22,7 @@ export default async function AdminWorksPage() {
       </p>
 
       <div className="mt-8">
-        <WorksAdmin initial={works} />
+        <WorksAdmin initial={works} perView={settings.works_per_view ?? 3} />
       </div>
     </div>
   );

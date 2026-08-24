@@ -186,6 +186,8 @@ export const DEMO_SETTINGS: SiteSettings = {
   pedido_title: "Armemos tu prenda",
   pedido_subtitle: "En unos pasos elegís la prenda, subís tu imagen y nos llega listo para producción.",
 
+  works_per_view: 3,
+
   confirmation_title: "¡Pedido recibido!",
   confirmation_message: "Te vamos a contactar para confirmar los detalles y coordinar el pago.",
 
