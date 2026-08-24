@@ -26,13 +26,16 @@ function normalize(text: string) {
  * era scrollear.
  */
 export function OrdersPanel({
-  orders,
+  orders: initialOrders,
   metrics,
 }: {
   // La forma la impone OrderRow, que ya contempla pedidos viejos y nuevos.
   orders: React.ComponentProps<typeof OrderRow>["order"][];
   metrics: OrderMetrics;
 }) {
+  // La lista vive acá para que borrar un pedido lo saque en el momento, sin
+  // recargar la página.
+  const [orders, setOrders] = useState(initialOrders);
   const [search, setSearch] = useState("");
   const [estado, setEstado] = useState<OrderStatus | "">("");
   const [verNumeros, setVerNumeros] = useState(false);
@@ -140,7 +143,11 @@ export function OrdersPanel({
 
       <div className="space-y-4">
         {filtrados.map((o) => (
-          <OrderRow key={o.id} order={o} />
+          <OrderRow
+            key={o.id}
+            order={o}
+            onDeleted={(id) => setOrders((prev) => prev.filter((o) => o.id !== id))}
+          />
         ))}
 
         {filtrados.length === 0 && (

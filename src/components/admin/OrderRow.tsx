@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { ChevronDown, ChevronUp, Download } from "lucide-react";
+import { ChevronDown, ChevronUp, Download, Trash2 } from "lucide-react";
 import clsx from "clsx";
 import type { Order, OrderStatus } from "@/lib/types";
 import { attachmentUrl } from "@/lib/cloudinary-url";
@@ -50,7 +50,14 @@ function orderNumber(id: string) {
   return id.slice(0, 8);
 }
 
-export function OrderRow({ order }: { order: OrderWithLines }) {
+export function OrderRow({
+  order,
+  onDeleted,
+}: {
+  order: OrderWithLines;
+  onDeleted?: (id: string) => void;
+}) {
+  const [borrando, setBorrando] = useState(false);
   const [status, setStatus] = useState<OrderStatus>(order.status);
   const [saving, setSaving] = useState(false);
   const [open, setOpen] = useState(false);
@@ -105,6 +112,26 @@ export function OrderRow({ order }: { order: OrderWithLines }) {
       body: JSON.stringify({ status: next }),
     });
     setSaving(false);
+  }
+
+  async function borrar() {
+    const aviso = [
+      `¿Borrar el pedido #${orderNumber(order.id)} de ${order.customer_name}?`,
+      "",
+      "Se van también sus prendas y estampados. No se puede deshacer.",
+      "El stock no se repone: si hace falta, ajustalo desde la prenda.",
+    ].join("\n");
+
+    if (!confirm(aviso)) return;
+
+    setBorrando(true);
+    const res = await fetch(`/api/admin/orders/${order.id}`, { method: "DELETE" });
+    if (res.ok) {
+      onDeleted?.(order.id);
+    } else {
+      setBorrando(false);
+      alert("No se pudo borrar el pedido.");
+    }
   }
 
   const created = new Date(order.created_at);
@@ -336,6 +363,20 @@ export function OrderRow({ order }: { order: OrderWithLines }) {
                 </div>
               </div>
             ))}
+          </div>
+
+          {/* Al final del detalle y no en la fila: borrar un pedido no se
+              deshace, así que conviene que cueste llegar. */}
+          <div className="mt-6 flex justify-end border-t border-line pt-4">
+            <button
+              type="button"
+              onClick={borrar}
+              disabled={borrando}
+              className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-2 text-xs text-ink-soft transition-colors hover:border-accent hover:text-accent disabled:opacity-50"
+            >
+              <Trash2 size={13} />
+              {borrando ? "Borrando..." : "Borrar este pedido"}
+            </button>
           </div>
         </div>
       )}
