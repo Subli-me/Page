@@ -34,6 +34,8 @@ const ALLOWED_FIELDS = [
   "pedido_title",
   "pedido_subtitle",
   "works_per_view",
+  "works_autoplay",
+  "works_interval_seconds",
   "confirmation_title",
   "confirmation_message",
   "footer_copyright_suffix",

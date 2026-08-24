@@ -109,7 +109,12 @@ export default async function Home({
           </div>
         </section>
 
-        <WorkShowcase works={works} perView={settings.works_per_view} />
+        <WorkShowcase
+          works={works}
+          perView={settings.works_per_view}
+          autoplay={settings.works_autoplay ?? true}
+          intervalSeconds={settings.works_interval_seconds ?? 5}
+        />
 
         {/* Catálogo de diseños */}
         {designs.length > 0 && (

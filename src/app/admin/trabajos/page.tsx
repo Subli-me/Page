@@ -22,7 +22,12 @@ export default async function AdminWorksPage() {
       </p>
 
       <div className="mt-8">
-        <WorksAdmin initial={works} perView={settings.works_per_view ?? 3} />
+        <WorksAdmin
+          initial={works}
+          perView={settings.works_per_view ?? 3}
+          autoplay={settings.works_autoplay ?? true}
+          intervalSeconds={settings.works_interval_seconds ?? 5}
+        />
       </div>
     </div>
   );

@@ -18,13 +18,25 @@ import type { WorkShowcase as Work } from "@/lib/types";
  * el gesto del dedo en el celular funciona sin que haya que programarlo, y con
  * el teclado también se navega.
  */
-/** Cada cuánto pasa al siguiente grupo. */
-const INTERVALO_MS = 5000;
+/**
+ * Cuánto espera para retomar el avance después de que alguien lo movió.
+ *
+ * Va atado al intervalo y no fijo: con un carrusel lento, diez segundos de
+ * pausa se sienten como nada; con uno rápido, como una eternidad.
+ */
+const esperaTrasTocar = (intervaloMs: number) => Math.max(8000, intervaloMs * 2);
 
-/** Cuánto espera para retomar el avance después de que alguien lo movió. */
-const REANUDAR_MS = 10000;
-
-export function WorkShowcase({ works, perView = 3 }: { works: Work[]; perView?: number }) {
+export function WorkShowcase({
+  works,
+  perView = 3,
+  autoplay = true,
+  intervalSeconds = 5,
+}: {
+  works: Work[];
+  perView?: number;
+  autoplay?: boolean;
+  intervalSeconds?: number;
+}) {
   const pistaRef = useRef<HTMLDivElement>(null);
   const reanudarRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [pausado, setPausado] = useState(false);
@@ -68,6 +80,7 @@ export function WorkShowcase({ works, perView = 3 }: { works: Work[]; perView?: 
   }, [works.length, visibles]);
 
   const hayCarrusel = works.length > visibles;
+  const intervaloMs = Math.max(2, intervalSeconds) * 1000;
 
   /**
    * Avance solo.
@@ -80,7 +93,7 @@ export function WorkShowcase({ works, perView = 3 }: { works: Work[]; perView?: 
    * Y no corre si el visitante pidió menos movimiento en su sistema.
    */
   useEffect(() => {
-    if (!hayCarrusel || pausado) return;
+    if (!autoplay || !hayCarrusel || pausado) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const id = setInterval(() => {
@@ -92,16 +105,16 @@ export function WorkShowcase({ works, perView = 3 }: { works: Work[]; perView?: 
         left: alFinal ? 0 : pista.scrollLeft + pista.clientWidth,
         behavior: "smooth",
       });
-    }, INTERVALO_MS);
+    }, intervaloMs);
 
     return () => clearInterval(id);
-  }, [hayCarrusel, pausado]);
+  }, [autoplay, hayCarrusel, pausado, intervaloMs]);
 
   /** Un rato sin avance solo después de que la persona deslizó a mano. */
   function pausarUnRato() {
     setPausado(true);
     if (reanudarRef.current) clearTimeout(reanudarRef.current);
-    reanudarRef.current = setTimeout(() => setPausado(false), REANUDAR_MS);
+    reanudarRef.current = setTimeout(() => setPausado(false), esperaTrasTocar(intervaloMs));
   }
 
   useEffect(() => () => {
@@ -218,7 +231,7 @@ export function WorkShowcase({ works, perView = 3 }: { works: Work[]; perView?: 
 
         {hayCarrusel && (
           <p className="mt-4 text-center text-xs text-ink-soft">
-            {works.length} trabajos · pasan solos, o deslizá vos
+            {works.length} trabajos{autoplay ? " · pasan solos, o deslizá vos" : " · deslizá para ver más"}
           </p>
         )}
       </div>

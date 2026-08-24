@@ -16,20 +16,25 @@ import { ImageUploader, type UploadedImage } from "@/components/order/ImageUploa
 export function WorksAdmin({
   initial,
   perView,
+  autoplay,
+  intervalSeconds,
 }: {
   initial: WorkShowcase[];
   perView: number;
+  autoplay: boolean;
+  intervalSeconds: number;
 }) {
   const [works, setWorks] = useState(initial);
   const [subiendo, setSubiendo] = useState(false);
   const [porVista, setPorVista] = useState(perView);
+  const [pasaSolo, setPasaSolo] = useState(autoplay);
+  const [segundos, setSegundos] = useState(intervalSeconds);
 
-  async function guardarPorVista(n: number) {
-    setPorVista(n);
+  async function guardarAjuste(campo: string, valor: number | boolean) {
     await fetch("/api/admin/settings", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ works_per_view: n }),
+      body: JSON.stringify({ [campo]: valor }),
     });
   }
 
@@ -121,7 +126,10 @@ export function WorksAdmin({
             <button
               key={n}
               type="button"
-              onClick={() => guardarPorVista(n)}
+              onClick={() => {
+                setPorVista(n);
+                guardarAjuste("works_per_view", n);
+              }}
               className={clsx(
                 "h-10 w-10 rounded-full border text-sm transition-colors",
                 porVista === n ? "border-ink bg-ink text-paper" : "border-line hover:border-ink"
@@ -131,6 +139,49 @@ export function WorksAdmin({
             </button>
           ))}
         </div>
+      </section>
+
+      <section>
+        <h2 className="mb-1 font-display text-xl">Que pase solo</h2>
+        <p className="mb-3 max-w-2xl text-sm text-ink-soft">
+          Se frena cuando alguien pasa el mouse por encima o lo desliza a mano,
+          así no se mueve mientras están leyendo un comentario.
+        </p>
+
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={pasaSolo}
+            onChange={(e) => {
+              setPasaSolo(e.target.checked);
+              guardarAjuste("works_autoplay", e.target.checked);
+            }}
+            className="h-4 w-4 accent-accent"
+          />
+          Pasar al siguiente automáticamente
+        </label>
+
+        {pasaSolo && (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="text-sm text-ink-soft">Cada</span>
+            <input
+              type="number"
+              min={2}
+              max={30}
+              value={segundos}
+              onChange={(e) => setSegundos(Number(e.target.value))}
+              onBlur={(e) => {
+                const n = Math.min(30, Math.max(2, Number(e.target.value) || 5));
+                setSegundos(n);
+                guardarAjuste("works_interval_seconds", n);
+              }}
+              className="input h-10 w-20 py-0 text-center text-sm"
+            />
+            <span className="text-sm text-ink-soft">
+              segundos <span className="text-ink-soft/70">(entre 2 y 30)</span>
+            </span>
+          </div>
+        )}
       </section>
 
       <section>

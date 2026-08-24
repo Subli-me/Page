@@ -192,6 +192,10 @@ export type SiteSettings = {
 
   /** Cuántos trabajos se ven a la vez en el carrusel de la portada. */
   works_per_view: number;
+  /** Si el carrusel pasa solo. */
+  works_autoplay: boolean;
+  /** Cada cuántos segundos pasa, cuando avanza solo. */
+  works_interval_seconds: number;
 
   confirmation_title: string;
   confirmation_message: string;
