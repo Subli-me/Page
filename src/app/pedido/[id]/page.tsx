@@ -7,6 +7,7 @@ import { Footer } from "@/components/Footer";
 import { createServiceClient } from "@/lib/supabase/server";
 import { getSiteSettings } from "@/lib/settings";
 import { ORDER_WHATSAPP_NUMBERS, whatsappLink } from "@/lib/contact";
+import { RepeatOrderButton } from "@/components/order/RepeatOrderButton";
 
 /**
  * El pedido confirmado, en una página propia que se puede volver a abrir.
@@ -178,7 +179,15 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
             </div>
           </div>
 
-          <div className="mt-8 text-center">
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <RepeatOrderButton
+              lines={order.order_lines ?? []}
+              contact={{
+                name: order.customer_name,
+                email: order.customer_email,
+                phone: order.customer_phone ?? "",
+              }}
+            />
             <Link
               href="/pedido"
               className="inline-flex items-center gap-2 rounded-full border border-line px-6 py-3 text-sm hover:border-ink hover:bg-panel transition-colors"
