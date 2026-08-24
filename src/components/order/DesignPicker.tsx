@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Image from "next/image";
+import { ProtectedImage } from "@/components/ProtectedImage";
 import clsx from "clsx";
 import { Check, Search, X } from "lucide-react";
 import type { DesignCatalogItem, DesignCategory } from "@/lib/types";
@@ -198,10 +198,14 @@ export function DesignPicker({
                       selected ? "border-accent" : "border-transparent hover:border-line"
                     )}
                   >
-                    <Image
+                    {/* Se muestra reducida, pero al elegirla se guarda la
+                        dirección original: producción necesita el archivo
+                        completo. */}
+                    <ProtectedImage
                       src={d.image_url}
                       alt={d.name}
                       fill
+                      width={400}
                       sizes="(max-width: 1024px) 30vw, 150px"
                       className="object-contain p-2"
                     />

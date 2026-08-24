@@ -29,6 +29,7 @@ export function ProductGrid({ products, ctaLabel = "Elegir" }: { products: Produ
             >
               {p.image_url ? (
                 <MediaDisplay
+                  protect
                   src={p.image_url}
                   alt={p.name}
                   fill

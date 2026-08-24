@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import { ProtectedImage } from "./ProtectedImage";
 import { motion, AnimatePresence } from "framer-motion";
 import clsx from "clsx";
 import { Palette, ArrowUpRight } from "lucide-react";
@@ -206,10 +206,11 @@ export function DesignGrid({
                     transition={{ type: "spring", stiffness: 280, damping: 20 }}
                     className="group relative overflow-hidden rounded-2xl border border-line bg-paper aspect-square cursor-default"
                   >
-                    <Image
+                    <ProtectedImage
                       src={d.image_url}
                       alt={d.name}
                       fill
+                      width={500}
                       sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 200px"
                       className="object-contain p-3 transition-transform duration-500 group-hover:scale-110"
                     />

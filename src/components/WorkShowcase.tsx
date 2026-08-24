@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
+import { ProtectedImage } from "./ProtectedImage";
 import { ChevronLeft, ChevronRight, Quote } from "lucide-react";
 import clsx from "clsx";
 import type { WorkShowcase as Work } from "@/lib/types";
@@ -210,10 +210,11 @@ export function WorkShowcase({
               }}
             >
               <div className="relative aspect-4/3">
-                <Image
+                <ProtectedImage
                   src={w.image_url}
                   alt={w.caption ?? "Prenda estampada"}
                   fill
+                  width={900}
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 420px"
                   className="object-cover transition-transform duration-500 group-hover:scale-105"
                 />
