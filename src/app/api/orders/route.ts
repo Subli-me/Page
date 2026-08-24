@@ -196,6 +196,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  // A partir de acá el pedido ya existe en la base, pero todavía le faltan las
+  // prendas y los estampados. Si algo de eso falla hay que deshacerlo entero:
+  // devolver el stock y borrar la cabecera, que se lleva por delante las filas
+  // hijas. Un pedido a medias es peor que ninguno — se ve en el panel, no dice
+  // qué hay que imprimir, y las unidades quedan reservadas para siempre.
+  const deshacer = async () => {
+    await devolver();
+    await supabase.from("orders").delete().eq("id", order.id);
+  };
+
   const { data: insertedLines, error: linesError } = await supabase
     .from("order_lines")
     .insert(
@@ -213,6 +223,7 @@ export async function POST(req: Request) {
     .select();
 
   if (linesError || !insertedLines) {
+    await deshacer();
     return NextResponse.json({ error: linesError?.message ?? "No se pudo guardar" }, { status: 500 });
   }
 
@@ -233,6 +244,7 @@ export async function POST(req: Request) {
   );
 
   if (itemsError) {
+    await deshacer();
     return NextResponse.json({ error: itemsError.message }, { status: 500 });
   }
 
