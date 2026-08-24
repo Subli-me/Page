@@ -190,6 +190,20 @@ export type SiteSettings = {
   pedido_title: string;
   pedido_subtitle: string;
 
+  // Textos de la portada, editables en vivo.
+  hero_secondary_cta_label: string;
+  steps_title: string;
+  catalog_title: string;
+  designs_title: string;
+  designs_subtitle: string;
+  designs_cta_label: string;
+  filter_color_label: string;
+  filter_category_label: string;
+  designs_more_label: string;
+  product_cta_label: string;
+  works_title: string;
+  works_subtitle: string;
+
   /** Cuántos trabajos se ven a la vez en el carrusel de la portada. */
   works_per_view: number;
   /** Si el carrusel pasa solo. */

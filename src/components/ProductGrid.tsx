@@ -8,7 +8,7 @@ import type { Product } from "@/lib/types";
 import { Reveal } from "./Reveal";
 import { MediaDisplay } from "./MediaDisplay";
 
-export function ProductGrid({ products }: { products: Product[] }) {
+export function ProductGrid({ products, ctaLabel = "Elegir" }: { products: Product[]; ctaLabel?: string }) {
   if (products.length === 0) {
     return (
       <p className="text-ink-soft">
@@ -58,7 +58,7 @@ export function ProductGrid({ products }: { products: Product[] }) {
                   ${p.base_price.toLocaleString("es-AR")}
                 </span>
                 <span className="text-[11px] font-medium text-accent opacity-0 transition-opacity group-hover:opacity-100">
-                  Elegir →
+                  {ctaLabel} →
                 </span>
               </div>
             </div>

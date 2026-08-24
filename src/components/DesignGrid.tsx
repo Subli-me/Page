@@ -23,7 +23,21 @@ const COLORS = [
   { name: "Multicolor", value: "multicolor" },
 ];
 
-export function DesignGrid({ designs, maxItems }: { designs: DesignCatalogItem[]; maxItems?: number }) {
+export function DesignGrid({
+  designs,
+  maxItems,
+  // Con valores por defecto para que /disenos, que no tiene los ajustes a mano,
+  // siga mostrando lo mismo.
+  colorLabel = "Filtrar por color",
+  categoryLabel = "Filtrar por categoría",
+  moreLabel = "Ver más diseños",
+}: {
+  designs: DesignCatalogItem[];
+  maxItems?: number;
+  colorLabel?: string;
+  categoryLabel?: string;
+  moreLabel?: string;
+}) {
   const [activeColor, setActiveColor] = useState<string>("");
   const [activeCategory, setActiveCategory] = useState<string>("");
   const [categories, setCategories] = useState<DesignCategory[]>([]);
@@ -74,7 +88,7 @@ export function DesignGrid({ designs, maxItems }: { designs: DesignCatalogItem[]
       {/* Filtros por Color */}
       <div className="space-y-3">
         <p className="text-xs uppercase tracking-widest text-ink-soft font-medium flex items-center gap-2">
-          <Palette size={14} /> Filtrar por color
+          <Palette size={14} /> {colorLabel}
         </p>
         <div className="flex flex-wrap gap-2">
           <button
@@ -120,7 +134,7 @@ export function DesignGrid({ designs, maxItems }: { designs: DesignCatalogItem[]
       {!loadingCategories && categoryCounts.length > 0 && (
         <div className="space-y-3">
           <p className="text-xs uppercase tracking-widest text-ink-soft font-medium">
-            Filtrar por categoría
+            {categoryLabel}
           </p>
           <div className="flex flex-wrap gap-2">
             <button
@@ -234,7 +248,7 @@ export function DesignGrid({ designs, maxItems }: { designs: DesignCatalogItem[]
                   href="/disenos"
                   className="inline-flex items-center gap-2 rounded-full border border-line px-6 py-3 text-sm hover:border-ink hover:bg-panel transition-colors"
                 >
-                  Ver más diseños <ArrowUpRight size={15} />
+                  {moreLabel} <ArrowUpRight size={15} />
                 </Link>
               </div>
             )}

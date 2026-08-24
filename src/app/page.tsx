@@ -78,9 +78,12 @@ export default async function Home({
         {/* Cómo funciona */}
         <section className="mx-auto max-w-7xl px-6 py-12 sm:py-16">
           <Reveal>
-            <h2 className="mb-8 font-display text-3xl sm:text-4xl italic tracking-tight">
-              Cómo funciona
-            </h2>
+            <EditableText
+              field="steps_title"
+              value={settings.steps_title}
+              as="h2"
+              className="mb-8 block font-display text-3xl sm:text-4xl italic tracking-tight"
+            />
           </Reveal>
           <div className="grid gap-8 sm:grid-cols-3 lg:gap-12">
             {steps.map((s, i) => (
@@ -98,14 +101,19 @@ export default async function Home({
           <div className="mx-auto max-w-7xl px-6 py-24">
             <Reveal>
               <div className="mb-12 flex items-end justify-between">
-                <h2 className="font-display text-4xl italic tracking-tight">Catálogo</h2>
+                <EditableText
+                  field="catalog_title"
+                  value={settings.catalog_title}
+                  as="h2"
+                  className="font-display text-4xl italic tracking-tight"
+                />
                 <span className="text-sm text-ink-soft">
                   {products.length} prenda{products.length !== 1 ? "s" : ""}
                 </span>
               </div>
             </Reveal>
 
-            <ProductGrid products={products} />
+            <ProductGrid products={products} ctaLabel={settings.product_cta_label} />
           </div>
         </section>
 
@@ -114,6 +122,8 @@ export default async function Home({
           perView={settings.works_per_view}
           autoplay={settings.works_autoplay ?? true}
           intervalSeconds={settings.works_interval_seconds ?? 5}
+          title={settings.works_title}
+          subtitle={settings.works_subtitle}
         />
 
         {/* Catálogo de diseños */}
@@ -123,30 +133,43 @@ export default async function Home({
               <Reveal>
                 <div className="mb-10 flex items-end justify-between">
                   <div>
-                    <h2 className="font-display text-4xl italic tracking-tight">
-                      Catálogo de diseños
-                    </h2>
-                    <p className="mt-2 text-sm text-ink-soft">
-                      Elegí uno de nuestros diseños o subí el tuyo propio al hacer tu pedido.
-                    </p>
+                    <EditableText
+                      field="designs_title"
+                      value={settings.designs_title}
+                      as="h2"
+                      className="font-display text-4xl italic tracking-tight"
+                    />
+                    <EditableText
+                      field="designs_subtitle"
+                      value={settings.designs_subtitle}
+                      as="p"
+                      multiline
+                      className="mt-2 block text-sm text-ink-soft"
+                    />
                   </div>
                   <Link
                     href="/pedido"
                     className="hidden sm:inline-flex items-center gap-2 rounded-full border border-line px-5 py-2.5 text-sm hover:border-ink hover:bg-panel transition-colors"
                   >
-                    Hacer pedido <ArrowUpRight size={15} />
+                    {settings.designs_cta_label} <ArrowUpRight size={15} />
                   </Link>
                 </div>
               </Reveal>
 
-              <DesignGrid designs={designs} maxItems={5} />
+              <DesignGrid
+                designs={designs}
+                maxItems={5}
+                colorLabel={settings.filter_color_label}
+                categoryLabel={settings.filter_category_label}
+                moreLabel={settings.designs_more_label}
+              />
 
               <div className="mt-10 flex sm:hidden justify-center">
                 <Link
                   href="/pedido"
                   className="inline-flex items-center gap-2 rounded-full border border-line px-6 py-3 text-sm hover:border-ink hover:bg-panel transition-colors"
                 >
-                  Hacer pedido <ArrowUpRight size={15} />
+                  {settings.designs_cta_label} <ArrowUpRight size={15} />
                 </Link>
               </div>
             </div>

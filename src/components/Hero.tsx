@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { SiteSettings } from "@/lib/types";
+import { EditableText } from "./edit/EditableText";
 
 const HERO_IMAGES = [
   "/hero-1.png",
@@ -86,7 +87,10 @@ export function Hero({ settings }: HeroProps) {
             href="#catalogo"
             className="link-underline inline-flex items-center gap-2 px-2 py-4 text-paper/90 hover:text-paper font-medium"
           >
-            Ver prendas
+            <EditableText
+              field="hero_secondary_cta_label"
+              value={settings.hero_secondary_cta_label}
+            />
           </Link>
         </div>
       </div>

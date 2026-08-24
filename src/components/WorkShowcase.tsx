@@ -5,6 +5,7 @@ import Image from "next/image";
 import { ChevronLeft, ChevronRight, Quote } from "lucide-react";
 import clsx from "clsx";
 import type { WorkShowcase as Work } from "@/lib/types";
+import { EditableText } from "./edit/EditableText";
 
 /**
  * Trabajos ya entregados, en carrusel.
@@ -31,11 +32,15 @@ export function WorkShowcase({
   perView = 3,
   autoplay = true,
   intervalSeconds = 5,
+  title,
+  subtitle,
 }: {
   works: Work[];
   perView?: number;
   autoplay?: boolean;
   intervalSeconds?: number;
+  title: string;
+  subtitle: string;
 }) {
   const pistaRef = useRef<HTMLDivElement>(null);
   const reanudarRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -140,11 +145,19 @@ export function WorkShowcase({
       <div className="mx-auto max-w-7xl px-6 py-16 sm:py-24">
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h2 className="font-display text-4xl italic tracking-tight">Trabajos hechos</h2>
-            <p className="mt-2 max-w-lg text-sm text-ink-soft">
-              Prendas que ya entregamos. Así quedan de verdad, fuera de la
-              pantalla.
-            </p>
+            <EditableText
+              field="works_title"
+              value={title}
+              as="h2"
+              className="font-display text-4xl italic tracking-tight"
+            />
+            <EditableText
+              field="works_subtitle"
+              value={subtitle}
+              as="p"
+              multiline
+              className="mt-2 block max-w-lg text-sm text-ink-soft"
+            />
           </div>
 
           {hayCarrusel && (
