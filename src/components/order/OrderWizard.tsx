@@ -13,6 +13,7 @@ import {
   ChevronRight,
   MessageCircle,
   Minus,
+  ShoppingBag,
   Plus,
   RotateCcw,
   Shirt,
@@ -222,7 +223,8 @@ export function OrderWizard({
       setContact(draft.contact);
       setLines(draft.lines ?? []);
       setEditingLineId(draft.editingLineId ?? null);
-      setStep(draft.step);
+      // El boton del nav entra con ?ver=pedido; ahi va directo al carrito.
+      setStep(searchParams.get("ver") === "pedido" && draft.lines?.length ? 3 : draft.step);
       setRestored(true);
     }
     setHydrated(true);
@@ -509,28 +511,56 @@ export function OrderWizard({
         </div>
       )}
 
-      {/* Stepper */}
+      {/* Stepper. Los pasos ya recorridos son navegables: si no, para volver al
+          pedido habia que terminar el paso en el que uno estaba. */}
       <div className="mb-10 flex items-center gap-2">
-        {STEPS.map((label, i) => (
-          <div key={label} className="flex flex-1 items-center gap-2">
-            <div
-              className={clsx(
-                "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm transition-colors",
-                i < step
-                  ? "bg-ink text-paper"
-                  : i === step
-                  ? "bg-accent text-paper"
-                  : "bg-panel text-ink-soft border border-line"
-              )}
-            >
-              {i < step ? <Check size={14} /> : i + 1}
+        {STEPS.map((label, i) => {
+          const alcanzable = i < step || (i === 3 && lines.length > 0);
+          return (
+            <div key={label} className="flex flex-1 items-center gap-2">
+              <button
+                type="button"
+                disabled={!alcanzable}
+                onClick={() => alcanzable && setStep(i)}
+                aria-current={i === step ? "step" : undefined}
+                title={alcanzable ? `Ir a ${label}` : undefined}
+                className={clsx(
+                  "flex items-center gap-2",
+                  alcanzable ? "cursor-pointer" : "cursor-default"
+                )}
+              >
+                <span
+                  className={clsx(
+                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm transition-colors",
+                    i < step
+                      ? "bg-ink text-paper hover:bg-accent"
+                      : i === step
+                        ? "bg-accent text-paper"
+                        : alcanzable
+                          ? "border border-line bg-panel text-ink-soft hover:border-ink hover:text-ink"
+                          : "border border-line bg-panel text-ink-soft"
+                  )}
+                >
+                  {i < step ? <Check size={14} /> : i + 1}
+                </span>
+                <span
+                  className={clsx(
+                    "hidden text-sm sm:block",
+                    i === step ? "text-ink" : "text-ink-soft"
+                  )}
+                >
+                  {label}
+                  {i === 3 && lines.length > 0 && (
+                    <span className="ml-1.5 rounded-full bg-accent-soft px-1.5 py-0.5 text-xs text-accent tabular-nums">
+                      {lines.length}
+                    </span>
+                  )}
+                </span>
+              </button>
+              {i < STEPS.length - 1 && <div className="h-px flex-1 bg-line" />}
             </div>
-            <span className={clsx("hidden text-sm sm:block", i === step ? "text-ink" : "text-ink-soft")}>
-              {label}
-            </span>
-            {i < STEPS.length - 1 && <div className="h-px flex-1 bg-line" />}
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <AnimatePresence mode="wait">
@@ -999,6 +1029,16 @@ export function OrderWizard({
             <span className="text-xs text-ink-soft">
               {lines.length} prenda{lines.length !== 1 ? "s" : ""} ya en el pedido
             </span>
+          )}
+
+          {step === 2 && lines.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setStep(3)}
+              className="inline-flex items-center gap-1.5 text-sm text-ink-soft underline underline-offset-2 hover:text-ink"
+            >
+              <ShoppingBag size={14} /> Ver mi pedido ({lines.length})
+            </button>
           )}
 
           {step === 2 ? (

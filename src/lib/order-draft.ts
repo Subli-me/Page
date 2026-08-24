@@ -53,6 +53,20 @@ export type OrderDraft = {
   editingLineId: string | null;
 };
 
+/**
+ * El evento `storage` del navegador solo llega a las *otras* pestañas, así que
+ * avisamos aparte para que el botón del carrito se actualice en la misma.
+ */
+const DRAFT_EVENT = "sublime:borrador";
+
+function notify() {
+  try {
+    window.dispatchEvent(new Event(DRAFT_EVENT));
+  } catch {
+    // en el servidor no hay window
+  }
+}
+
 export function saveDraft(draft: Omit<OrderDraft, "version" | "savedAt">) {
   try {
     // Un borrador vacío no aporta nada al volver.
@@ -61,9 +75,26 @@ export function saveDraft(draft: Omit<OrderDraft, "version" | "savedAt">) {
       KEY,
       JSON.stringify({ ...draft, version: VERSION, savedAt: Date.now() })
     );
+    notify();
   } catch {
     // Modo incógnito o almacenamiento lleno: seguir sin guardar es aceptable.
   }
+}
+
+/** Cuántas prendas hay en el pedido a medio armar. */
+export function countDraftLines(): number {
+  return loadDraft()?.lines?.length ?? 0;
+}
+
+/** Avisa cuando el borrador cambia, en esta pestaña o en otra. */
+export function subscribeDraft(onChange: () => void): () => void {
+  const handler = () => onChange();
+  window.addEventListener(DRAFT_EVENT, handler);
+  window.addEventListener("storage", handler);
+  return () => {
+    window.removeEventListener(DRAFT_EVENT, handler);
+    window.removeEventListener("storage", handler);
+  };
 }
 
 export function loadDraft(): OrderDraft | null {
@@ -85,6 +116,7 @@ export function loadDraft(): OrderDraft | null {
 export function clearDraft() {
   try {
     localStorage.removeItem(KEY);
+    notify();
   } catch {
     // nada que hacer
   }

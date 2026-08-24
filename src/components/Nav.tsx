@@ -5,6 +5,7 @@ import { getActiveProducts, getAllProductSizes } from "@/lib/products";
 import { ProcessModal } from "./ProcessModal";
 import { SizeGuideModal } from "./SizeGuideModal";
 import { EditableText } from "./edit/EditableText";
+import { CartButton } from "./CartButton";
 
 import Image from "next/image";
 
@@ -57,16 +58,20 @@ export async function Nav() {
           </nav>
         </div>
 
-        <Link
-          href="/pedido"
-          className="group inline-flex items-center gap-1.5 rounded-full bg-lime px-5 py-2.5 font-medium text-dark transition-transform hover:-translate-y-0.5"
-        >
-          {settings.hero_cta_label}
-          <ArrowUpRight
-            size={16}
-            className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-          />
-        </Link>
+        <div className="flex items-center gap-2">
+          <CartButton />
+
+          <Link
+            href="/pedido"
+            className="group inline-flex items-center gap-1.5 rounded-full bg-lime px-5 py-2.5 font-medium text-dark transition-transform hover:-translate-y-0.5"
+          >
+            {settings.hero_cta_label}
+            <ArrowUpRight
+              size={16}
+              className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+            />
+          </Link>
+        </div>
       </div>
     </header>
   );
