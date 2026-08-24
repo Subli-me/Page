@@ -22,12 +22,14 @@ import type {
   ProductColor,
   ProductSize,
   ProductMockup,
+  ProductStock,
 } from "@/lib/types";
 import { EditableNumber } from "./EditableNumber";
 import { ImageUploader } from "@/components/order/ImageUploader";
 import { MediaDisplay } from "@/components/MediaDisplay";
 import { MockupZoneEditor } from "./MockupZoneEditor";
 import { GarmentPreview, fabricColor } from "@/components/GarmentPreview";
+import { StockGrid } from "./StockGrid";
 
 export function ProductsAdmin({
   initialProducts,
@@ -36,6 +38,7 @@ export function ProductsAdmin({
   initialColors,
   initialMockups,
   initialCombos,
+  initialStock,
 }: {
   initialProducts: Product[];
   initialZones: PrintZone[];
@@ -43,6 +46,7 @@ export function ProductsAdmin({
   initialColors: ProductColor[];
   initialMockups: ProductMockup[];
   initialCombos: PrintZoneCombo[];
+  initialStock: ProductStock[];
 }) {
   const [products, setProducts] = useState(initialProducts);
   const [zones, setZones] = useState(initialZones);
@@ -50,6 +54,7 @@ export function ProductsAdmin({
   const [colors, setColors] = useState(initialColors);
   const [mockups, setMockups] = useState(initialMockups);
   const [combos, setCombos] = useState(initialCombos);
+  const [stock, setStock] = useState(initialStock);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [editingMockup, setEditingMockup] = useState<{ productId: string; zoneKey: string } | null>(null);
   const [verifying, setVerifying] = useState(false);
@@ -399,6 +404,8 @@ export function ProductsAdmin({
                   sizes={sizes.filter((s) => s.product_id === p.id)}
                   colors={colors.filter((c) => c.product_id === p.id)}
                   mockups={mockups.filter((m) => m.product_id === p.id)}
+                  stock={stock}
+                  onStockChange={setStock}
                   zones={zones}
                   imageBroken={brokenProductIds.includes(p.id)}
                   brokenMockupIds={brokenMockupIds}
@@ -618,6 +625,8 @@ function ProductRow({
   sizes,
   colors,
   mockups,
+  stock,
+  onStockChange,
   zones,
   imageBroken,
   brokenMockupIds,
@@ -647,6 +656,8 @@ function ProductRow({
   sizes: ProductSize[];
   colors: ProductColor[];
   mockups: ProductMockup[];
+  stock: ProductStock[];
+  onStockChange: (next: ProductStock[]) => void;
   zones: PrintZone[];
   imageBroken: boolean;
   brokenMockupIds: string[];
@@ -987,6 +998,19 @@ function ProductRow({
                     </button>
                   </div>
                 </div>
+              </div>
+
+              <div>
+                <p className="mb-1 text-xs font-medium uppercase tracking-wide text-ink-soft">
+                  Stock
+                </p>
+                <StockGrid
+                  productId={product.id}
+                  sizes={sizes}
+                  colors={colors}
+                  stock={stock}
+                  onChange={onStockChange}
+                />
               </div>
 
               {/* Mockups por zona */}

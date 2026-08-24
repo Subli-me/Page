@@ -50,6 +50,20 @@ export type PrintZoneCombo = {
   extra_price: number;
 };
 
+/**
+ * Stock de una combinación de prenda, talle y color.
+ *
+ * Que no exista fila significa "sin control": esa combinación se puede pedir
+ * libremente.
+ */
+export type ProductStock = {
+  id: string;
+  product_id: string;
+  size: string;
+  color: string | null;
+  quantity: number;
+};
+
 export type OrderStatus =
   | "pendiente"
   | "confirmado"

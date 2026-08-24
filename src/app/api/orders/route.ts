@@ -4,6 +4,7 @@ import { Resend } from "resend";
 import { createServiceClient } from "@/lib/supabase/server";
 import { buildOrderBreakdown } from "@/lib/pricing";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
+import { stockDisponible } from "@/lib/stock";
 
 const printSchema = z.object({
   printZoneKey: z.string().min(1),
@@ -70,8 +71,46 @@ export async function POST(req: Request) {
       supabase.from("product_sizes").select("product_id,size,price_delta").in("product_id", productIds),
     ]);
 
-  if (!products || products.length !== productIds.length || !zones || zones.length !== zoneKeys.length) {
+  if (
+    !products ||
+    products.length !== productIds.length ||
+    !zones ||
+    zones.length !== zoneKeys.length
+  ) {
     return NextResponse.json({ error: "Producto o zonas inválidas" }, { status: 400 });
+  }
+
+  // El stock lo valida el servidor: el navegador deshabilita las opciones
+  // agotadas, pero eso es una ayuda visual, no un control.
+  const { data: stock } = await supabase
+    .from("product_stock")
+    .select("*")
+    .in("product_id", productIds);
+
+  // Se suman las unidades de cada combinación en todo el pedido, porque la
+  // misma puede repetirse en varios renglones.
+  const pedidoPorCombinacion = new Map<string, number>();
+  for (const l of data.lines) {
+    const k = `${l.productId}|${l.size}|${l.color ?? ""}`;
+    pedidoPorCombinacion.set(k, (pedidoPorCombinacion.get(k) ?? 0) + l.quantity);
+  }
+
+  for (const [k, pedidas] of pedidoPorCombinacion) {
+    const [pid, talle, col] = k.split("|");
+    const quedan = stockDisponible(stock ?? [], pid, talle, col || null);
+    if (quedan !== null && pedidas > quedan) {
+      const prenda = products.find((p) => p.id === pid)?.name ?? "la prenda";
+      const detalle = `${prenda} talle ${talle}${col ? ` ${col}` : ""}`;
+      return NextResponse.json(
+        {
+          error:
+            quedan === 0
+              ? `Nos quedamos sin ${detalle}.`
+              : `Solo quedan ${quedan} de ${detalle}.`,
+        },
+        { status: 409 }
+      );
+    }
   }
 
   // El precio de cada prenda lo decide el servidor con la misma función que usa
@@ -158,6 +197,20 @@ export async function POST(req: Request) {
 
   if (itemsError) {
     return NextResponse.json({ error: itemsError.message }, { status: 500 });
+  }
+
+  // Descontar lo vendido. Solo se tocan las combinaciones que llevan control:
+  // las que no tienen fila se piden libremente.
+  for (const [k, pedidas] of pedidoPorCombinacion) {
+    const [pid, talle, col] = k.split("|");
+    const fila = (stock ?? []).find(
+      (s) => s.product_id === pid && s.size === talle && (s.color ?? "") === (col ?? "")
+    );
+    if (!fila) continue;
+    await supabase
+      .from("product_stock")
+      .update({ quantity: Math.max(0, fila.quantity - pedidas), updated_at: new Date().toISOString() })
+      .eq("id", fila.id);
   }
 
   if (process.env.RESEND_API_KEY && process.env.ADMIN_NOTIFICATION_EMAIL) {

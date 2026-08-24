@@ -28,8 +28,10 @@ import type {
   Product,
   ProductColor,
   ProductSize,
+  ProductStock,
 } from "@/lib/types";
 import { buildOrderBreakdown, matchingCombos } from "@/lib/pricing";
+import { hayStock, stockDisponible } from "@/lib/stock";
 import { clearDraft, loadDraft, saveDraft } from "@/lib/order-draft";
 import { PriceBreakdown } from "./PriceBreakdown";
 import { type UploadedImage } from "./ImageUploader";
@@ -65,6 +67,7 @@ export function OrderWizard({
   colors,
   printZones,
   zoneCombos,
+  stock,
   designs,
   confirmationTitle,
   confirmationMessage,
@@ -74,6 +77,7 @@ export function OrderWizard({
   colors: ProductColor[];
   printZones: PrintZone[];
   zoneCombos: PrintZoneCombo[];
+  stock: ProductStock[];
   designs: DesignCatalogItem[];
   confirmationTitle: string;
   confirmationMessage: string;
@@ -129,6 +133,34 @@ export function OrderWizard({
   );
 
   const total = product ? breakdown.total : 0;
+
+  /**
+   * Unidades de esta combinación que ya están en el carrito.
+   *
+   * Sin esto se podrían pedir 3 y 3 de algo de lo que quedan 4: cada renglón
+   * miraría el stock por su cuenta.
+   */
+  const enCarrito = (pid: string, talle: string, col: string | null, exceptoLinea?: string | null) =>
+    lines
+      .filter(
+        (l) =>
+          l.id !== exceptoLinea &&
+          l.productId === pid &&
+          l.size === talle &&
+          (l.color ?? "") === (col ?? "")
+      )
+      .reduce((sum, l) => sum + l.quantity, 0);
+
+  /** Cuántas quedan del talle y color elegidos. `null` = sin control. */
+  const disponibles =
+    productId && size ? stockDisponible(stock, productId, size, color) : null;
+
+  const restantes =
+    disponibles === null
+      ? null
+      : Math.max(0, disponibles - enCarrito(productId!, size!, color, editingLineId));
+
+  const sinStock = restantes !== null && restantes === 0;
 
   /**
    * Lo que suma agregar (o tener) una zona, para mostrarlo en su propio chip.
@@ -278,7 +310,10 @@ export function OrderWizard({
 
   const canNext = [
     !!productId,
-    !!size && (productColors.length === 0 || !!color),
+    !!size &&
+      (productColors.length === 0 || !!color) &&
+      !sinStock &&
+      (restantes === null || quantity <= restantes),
     allZonesHaveImage,
     lines.length > 0,
     contact.name.length > 1 &&
@@ -299,7 +334,11 @@ export function OrderWizard({
         "Elegí una prenda para seguir.",
         !size
           ? "Elegí un talle para seguir."
-          : "Elegí un color para seguir.",
+          : productColors.length > 0 && !color
+            ? "Elegí un color para seguir."
+            : sinStock
+              ? "Nos quedamos sin esta combinación. Probá otro talle o color."
+              : `Solo nos quedan ${restantes}. Bajá la cantidad para seguir.`,
         addedZoneKeys.length === 0
           ? "Agregá al menos una zona de estampado y subí tu diseño."
           : `Falta subir la imagen de ${missingLabel}.`,
@@ -685,6 +724,7 @@ export function OrderWizard({
                       <button
                         key={c.id}
                         type="button"
+                        disabled={!!size && !hayStock(stock, product.id, size, c.name, 1)}
                         onClick={() => setColor(c.name)}
                         title={c.name}
                         className={clsx(
@@ -734,6 +774,22 @@ export function OrderWizard({
                     <Plus size={15} />
                   </button>
                 </div>
+                {restantes !== null && (
+                  <p
+                    className={
+                      sinStock || quantity > restantes
+                        ? "mt-2 text-xs text-accent"
+                        : "mt-2 text-xs text-ink-soft"
+                    }
+                  >
+                    {sinStock
+                      ? "Nos quedamos sin esta combinación. Probá otro talle o color."
+                      : quantity > restantes
+                        ? `Solo nos quedan ${restantes}. Bajá la cantidad o elegí otro talle.`
+                        : `Quedan ${restantes} disponibles.`}
+                  </p>
+                )}
+
                 {quantity > 1 && (
                   <p className="mt-2 text-xs text-ink-soft">
                     ¿Necesitás talles o colores distintos? Escribinos y lo

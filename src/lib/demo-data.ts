@@ -5,6 +5,7 @@ import type {
   ProductColor,
   ProductSize,
   ProductMockup,
+  ProductStock,
   SiteSettings,
 } from "@/lib/types";
 
@@ -84,6 +85,8 @@ export const DEMO_ZONES: PrintZone[] = [
 ];
 
 export const DEMO_MOCKUPS: ProductMockup[] = [];
+
+export const DEMO_STOCK: ProductStock[] = [];
 
 export const DEMO_ZONE_COMBOS: PrintZoneCombo[] = [
   // Pecho + espalda: dos pasadas de prensa en la misma prenda.
