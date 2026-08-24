@@ -63,9 +63,21 @@ export default async function Home({
 
   return (
     <EditModeProvider editing={editing}>
+      {/*
+        La ficha que leen los buscadores. Va dentro de una etiqueta `script`, y
+        ahí el navegador corta al ver `</script>` aunque esté en medio de un
+        texto. Un nombre de prenda con esa secuencia adentro cerraría la etiqueta
+        antes de tiempo y lo que siguiera se ejecutaría como código.
+
+        Cambiando cada `<` por su forma escapada, el contenido sigue siendo el
+        mismo texto —JSON las entiende igual— pero ya no queda ningún `<` que
+        pueda cerrar nada.
+      */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+        }}
       />
       <Nav />
 
