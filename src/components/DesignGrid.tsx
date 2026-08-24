@@ -196,6 +196,7 @@ export function DesignGrid({ designs, maxItems }: { designs: DesignCatalogItem[]
                       src={d.image_url}
                       alt={d.name}
                       fill
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 200px"
                       className="object-contain p-3 transition-transform duration-500 group-hover:scale-110"
                     />
 

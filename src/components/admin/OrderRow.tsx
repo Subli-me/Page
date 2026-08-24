@@ -116,7 +116,13 @@ export function OrderRow({ order }: { order: OrderWithLines }) {
           {allItems.slice(0, 4).map((item) => (
             <div key={item.id} className="group/item relative shrink-0">
               <div className="relative h-24 w-24 overflow-hidden rounded-xl bg-accent-soft">
-                <Image src={item.image_url} alt={zoneName(item)} fill className="object-contain" />
+                <Image
+                  src={item.image_url}
+                  alt={zoneName(item)}
+                  fill
+                  sizes="96px"
+                  className="object-contain"
+                />
 
                 {/* Una descarga por estampado: antes el botón solo aparecía
                     cuando el pedido tenía uno solo. */}
@@ -290,6 +296,7 @@ export function OrderRow({ order }: { order: OrderWithLines }) {
                               src={item.preview_url}
                               alt={`${zoneName(item)} en la prenda`}
                               fill
+                              sizes="56px"
                               className="object-contain"
                             />
                           </a>
@@ -300,6 +307,7 @@ export function OrderRow({ order }: { order: OrderWithLines }) {
                             src={item.image_url}
                             alt={zoneName(item)}
                             fill
+                            sizes="56px"
                             className="object-contain"
                           />
                         </div>

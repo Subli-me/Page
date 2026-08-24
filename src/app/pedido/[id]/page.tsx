@@ -156,6 +156,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                             src={item.preview_url ?? item.image_url}
                             alt={item.print_zones?.label ?? item.print_zone_key}
                             fill
+                            sizes="80px"
                             className="object-contain p-1"
                           />
                         </div>

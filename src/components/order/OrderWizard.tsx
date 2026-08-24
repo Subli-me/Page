@@ -841,6 +841,7 @@ export function OrderWizard({
                                     src={entry.image.url}
                                     alt={key}
                                     fill
+                                  sizes="80px"
                                     className="object-contain p-1"
                                   />
                                 )}

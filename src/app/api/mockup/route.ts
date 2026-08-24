@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createServiceClient } from "@/lib/supabase/server";
 import { getVariantTemplate } from "@/lib/printful";
+import { clientIp, rateLimit } from "@/lib/rate-limit";
 
 const schema = z.object({
   productId: z.string().uuid(),
@@ -14,6 +15,13 @@ const schema = z.object({
 });
 
 export async function POST(req: Request) {
+  // Cada llamada consulta la base y puede pegarle a Printful. La vista previa
+  // la pide el navegador al cambiar de zona, asi que el tope es holgado.
+  const limite = rateLimit(`mockup:${clientIp(req)}`, 120, 5 * 60 * 1000);
+  if (!limite.ok) {
+    return NextResponse.json({ error: "Demasiadas consultas" }, { status: 429 });
+  }
+
   const parsed = schema.safeParse(await req.json());
   if (!parsed.success) {
     return NextResponse.json({ error: "Datos inválidos" }, { status: 400 });

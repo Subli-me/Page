@@ -3,6 +3,7 @@ import { z } from "zod";
 import { Resend } from "resend";
 import { createServiceClient } from "@/lib/supabase/server";
 import { buildOrderBreakdown } from "@/lib/pricing";
+import { clientIp, rateLimit } from "@/lib/rate-limit";
 
 const printSchema = z.object({
   printZoneKey: z.string().min(1),
@@ -35,6 +36,16 @@ const orderSchema = z.object({
 });
 
 export async function POST(req: Request) {
+  // Confirmar un pedido escribe en tres tablas y dispara un email: conviene que
+  // no se pueda repetir sin freno desde el mismo lugar.
+  const limite = rateLimit(`orders:${clientIp(req)}`, 10, 10 * 60 * 1000);
+  if (!limite.ok) {
+    return NextResponse.json(
+      { error: "Demasiados pedidos seguidos. Esperá unos minutos." },
+      { status: 429, headers: { "Retry-After": String(Math.ceil(limite.esperarMs / 1000)) } }
+    );
+  }
+
   const body = await req.json();
   const parsed = orderSchema.safeParse(body);
 

@@ -198,7 +198,13 @@ export function DesignPicker({
                       selected ? "border-accent" : "border-transparent hover:border-line"
                     )}
                   >
-                    <Image src={d.image_url} alt={d.name} fill className="object-contain p-2" />
+                    <Image
+                      src={d.image_url}
+                      alt={d.name}
+                      fill
+                      sizes="(max-width: 1024px) 30vw, 150px"
+                      className="object-contain p-2"
+                    />
 
                     {/* El nombre importa para saber qué se está eligiendo, pero
                         taparía el diseño: aparece al pasar por encima. */}

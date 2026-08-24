@@ -632,7 +632,13 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
                   )}
                 >
                   <div className="relative aspect-square overflow-hidden rounded-lg bg-accent-soft">
-                    <Image src={item.url} alt={item.name} fill className="object-contain" />
+                    <Image
+                      src={item.url}
+                      alt={item.name}
+                      fill
+                      sizes="(max-width: 640px) 50vw, 180px"
+                      className="object-contain"
+                    />
                     {item.status === "uploading" && (
                       <div className="absolute inset-0 flex items-center justify-center bg-dark/40 backdrop-blur-[2px]">
                         <Loader2 size={24} className="animate-spin text-paper" />
@@ -858,7 +864,13 @@ export function DesignsAdmin({ initial }: { initial: DesignCatalogItem[] }) {
                   </button>
 
                   <div className="relative aspect-square overflow-hidden rounded-lg bg-accent-soft">
-                    <Image src={d.image_url} alt={d.name} fill className="object-contain" />
+                    <Image
+                      src={d.image_url}
+                      alt={d.name}
+                      fill
+                      sizes="(max-width: 640px) 50vw, 180px"
+                      className="object-contain"
+                    />
 
                     {aviso && !isBroken && (
                       <span
