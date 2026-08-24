@@ -1,0 +1,5 @@
+# Cómo reportar un problema de seguridad en este sitio (RFC 9116).
+
+Contact: mailto:delestal.miguelignacio@gmail.com
+Preferred-Languages: es, en
+Expires: 2027-08-24T00:00:00.000Z

@@ -1,14 +1,58 @@
 import type { NextConfig } from "next";
 
 /**
- * Cabeceras de seguridad.
+ * Reglas de seguridad de contenido.
  *
- * No hay Content-Security-Policy: el sitio sube archivos directo a Cloudinary,
- * carga fuentes de Google y usa estilos en línea, así que una CSP mal puesta
- * rompe la subida de pedidos. Conviene agregarla aparte, midiendo primero en
- * modo report-only.
+ * Sobre `script-src`, que es la parte floja y conviene entender: lo ideal sería
+ * un número de un solo uso por pedido, que hace que un script inyectado no se
+ * ejecute. No se puede acá: buena parte del sitio —el panel entero incluido— se
+ * genera en el build, y una página ya generada no puede llevar un número que
+ * cambia en cada visita. Se probó y bloqueaba todos los scripts de esas
+ * páginas.
+ *
+ * Así que `script-src` queda permisivo y el valor real de esta regla está en lo
+ * demás: nadie puede incrustar el sitio, cargar complementos, cambiar la base
+ * de las direcciones, mandar un formulario a otro lado, ni hablar con
+ * servidores que no sean los propios.
+ */
+const contentSecurityPolicy = [
+  "default-src 'self'",
+
+  // Next escribe sus scripts de arranque dentro del HTML, así que no se pueden
+  // restringir sin romper la página.
+  "script-src 'self' 'unsafe-inline'",
+
+  // Los estilos se escriben en la propia etiqueta en muchos lugares: el color
+  // de la prenda, la posición del diseño sobre ella.
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' https://fonts.gstatic.com",
+
+  // `blob:` es para las composiciones que se arman en el navegador antes de
+  // subirlas.
+  "img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://files.cdn.printful.com",
+  "media-src 'self' https://res.cloudinary.com",
+
+  // A dónde puede hablar el sitio: su propia API, Supabase, y la subida directa
+  // a Cloudinary.
+  "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.cloudinary.com https://res.cloudinary.com",
+
+  // Nadie incrusta el sitio, y el sitio no incrusta a nadie.
+  "frame-ancestors 'none'",
+  "frame-src 'none'",
+  "object-src 'none'",
+
+  // Los formularios solo se envían acá, y nadie puede cambiar la base de las
+  // direcciones relativas.
+  "form-action 'self'",
+  "base-uri 'self'",
+].join("; ");
+
+/**
+ * Cabeceras de seguridad.
  */
 const securityHeaders = [
+  { key: "Content-Security-Policy", value: contentSecurityPolicy },
+
   // Evita que el sitio se pueda incrustar en un iframe ajeno, que es como se
   // arman los engaños de clic (el visitante cree que toca una cosa y toca otra).
   { key: "X-Frame-Options", value: "DENY" },
