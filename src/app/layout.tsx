@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Fraunces } from "next/font/google";
 import "./globals.css";
 import { getSiteSettings } from "@/lib/settings";
@@ -48,6 +48,37 @@ export async function generateMetadata(): Promise<Metadata> {
       description: settings.seo_description,
       images: ogImage ? [ogImage] : undefined,
     },
+
+    // Para instalar el sitio en el celular.
+    manifest: "/manifest.webmanifest",
+    // iOS no lee el manifiesto: necesita estas dos por separado.
+    appleWebApp: {
+      capable: true,
+      title: settings.logo_text,
+      statusBarStyle: "default",
+    },
+    icons: {
+      icon: [
+        { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+        { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+      ],
+      apple: "/icons/apple-touch-icon.png",
+    },
+  };
+}
+
+/**
+ * Pinta la barra de estado del celular del color del sitio.
+ *
+ * Va aparte de la metadata porque Next lo exporta por separado, y `width` con
+ * `initial-scale` evitan que la página arranque alejada en móviles.
+ */
+export async function generateViewport(): Promise<Viewport> {
+  const settings = await getSiteSettings();
+  return {
+    width: "device-width",
+    initialScale: 1,
+    themeColor: settings.color_accent,
   };
 }
 
