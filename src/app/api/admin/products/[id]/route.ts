@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { mensajeDeBorrado } from "@/lib/db-errors";
 import { isAuthorizedAdmin } from "@/lib/admin-auth";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -30,7 +31,12 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   const { id } = await params;
   const service = createServiceClient();
   const { error } = await service.from("products").delete().eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    return NextResponse.json(
+      { error: mensajeDeBorrado(error, "esta prenda") },
+      { status: error.code === "23503" ? 409 : 500 }
+    );
+  }
 
   return NextResponse.json({ ok: true });
 }

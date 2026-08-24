@@ -98,6 +98,7 @@ export function ProductsAdmin({
   const [newZone, setNewZone] = useState({ label: "", extraPrice: "0", extraCost: "0" });
   const [newCombo, setNewCombo] = useState({ zoneA: "", zoneB: "", extraPrice: "0" });
   const [comboError, setComboError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   async function addCombo() {
     setComboError(null);
@@ -206,8 +207,19 @@ export function ProductsAdmin({
 
   async function removeProduct(id: string) {
     if (!confirm("¿Borrar esta prenda? También se van a borrar sus talles y colores.")) return;
+    setDeleteError(null);
+
+    const antes = products;
     setProducts((prev) => prev.filter((p) => p.id !== id));
-    await fetch(`/api/admin/products/${id}`, { method: "DELETE" });
+
+    const res = await fetch(`/api/admin/products/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      // La base impide borrar algo que un pedido usa. Sin reponerlo, el panel
+      // mostraria como borrado algo que se sigue vendiendo.
+      const json = await res.json().catch(() => ({}));
+      setProducts(antes);
+      setDeleteError(json.error ?? "No se pudo borrar la prenda.");
+    }
   }
 
   async function saveZone(id: string, field: "extra_price" | "extra_cost" | "label", value: number | string) {
@@ -239,8 +251,17 @@ export function ProductsAdmin({
 
   async function removeZone(id: string) {
     if (!confirm("¿Borrar esta zona de estampado?")) return;
+    setDeleteError(null);
+
+    const antes = zones;
     setZones((prev) => prev.filter((z) => z.id !== id));
-    await fetch(`/api/admin/zones/${id}`, { method: "DELETE" });
+
+    const res = await fetch(`/api/admin/zones/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}));
+      setZones(antes);
+      setDeleteError(json.error ?? "No se pudo borrar la zona.");
+    }
   }
 
   async function addSize(productId: string, size: string) {
@@ -346,6 +367,13 @@ export function ProductsAdmin({
 
   return (
     <div className="space-y-10">
+      {deleteError && (
+        <div className="flex items-start gap-2 rounded-xl border border-accent/40 bg-accent/10 px-4 py-3 text-sm text-accent">
+          <AlertTriangle size={15} className="mt-0.5 shrink-0" />
+          <span>{deleteError}</span>
+        </div>
+      )}
+
       <section>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-display text-xl">Prendas</h2>

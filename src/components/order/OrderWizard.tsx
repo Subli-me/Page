@@ -163,6 +163,38 @@ export function OrderWizard({
   const sinStock = restantes !== null && restantes === 0;
 
   /**
+   * Qué talles y colores no se pueden elegir.
+   *
+   * Un talle se agota cuando no queda en ninguno de sus colores: mostrarlo
+   * disponible obliga al cliente a entrar y descubrir que todos los colores
+   * están apagados, sin que nada le explique por qué.
+   */
+  const agotados = useMemo(() => {
+    if (!product) return { talles: [] as string[], colores: [] as string[] };
+
+    const talles = productSizes
+      .map((s) => s.size)
+      .filter((talle) =>
+        productColors.length === 0
+          ? !hayStock(stock, product.id, talle, null, 1)
+          : productColors.every((c) => !hayStock(stock, product.id, talle, c.name, 1))
+      );
+
+    // Los colores dependen del talle elegido: puede quedar negro en M y no en L.
+    const colores = size
+      ? productColors.filter((c) => !hayStock(stock, product.id, size, c.name, 1)).map((c) => c.name)
+      : [];
+
+    return { talles, colores };
+  }, [product, productSizes, productColors, size, stock]);
+
+  // Si el color que estaba elegido se agota al cambiar de talle, se suelta:
+  // dejarlo seleccionado mostraria un total de algo que no se puede pedir.
+  useEffect(() => {
+    if (color && agotados.colores.includes(color)) setColor(null);
+  }, [color, agotados.colores]);
+
+  /**
    * Lo que suma agregar (o tener) una zona, para mostrarlo en su propio chip.
    *
    * El recargo por combinacion es del par, no de cada zona: si lo mostraramos
@@ -204,7 +236,18 @@ export function OrderWizard({
       quantity: l.quantity,
     });
 
-  const cartTotal = lines.reduce((sum, l) => sum + lineBreakdown(l).total, 0);
+  /**
+   * Prendas del carrito que ya no están en el catálogo.
+   *
+   * El borrador vive días en el navegador: en el medio la prenda puede haberse
+   * borrado o desactivado desde el panel. Sin detectarlo, el cliente confirma y
+   * recibe un "Datos inválidos" que no explica nada.
+   */
+  const lineasCaidas = lines.filter((l) => !products.some((p) => p.id === l.productId));
+
+  const cartTotal = lines
+    .filter((l) => !lineasCaidas.includes(l))
+    .reduce((sum, l) => sum + lineBreakdown(l).total, 0);
   const cartUnits = lines.reduce((sum, l) => sum + l.quantity, 0);
 
   /** Deja la configuración en blanco, conservando lo ya agregado al pedido. */
@@ -315,7 +358,7 @@ export function OrderWizard({
       !sinStock &&
       (restantes === null || quantity <= restantes),
     allZonesHaveImage,
-    lines.length > 0,
+    lines.length > 0 && lineasCaidas.length === 0,
     contact.name.length > 1 &&
       contact.email.includes("@") &&
       contact.phone.replace(/\D/g, "").length >= 8,
@@ -342,7 +385,9 @@ export function OrderWizard({
         addedZoneKeys.length === 0
           ? "Agregá al menos una zona de estampado y subí tu diseño."
           : `Falta subir la imagen de ${missingLabel}.`,
-        "Agregá al menos una prenda al pedido.",
+        lineasCaidas.length > 0
+          ? `Sacá del pedido ${lineasCaidas.length === 1 ? "la prenda que ya no está disponible" : "las prendas que ya no están disponibles"}.`
+          : "Agregá al menos una prenda al pedido.",
         contact.name.length <= 1
           ? "Escribí tu nombre para poder confirmar."
           : !contact.email.includes("@")
@@ -705,10 +750,18 @@ export function OrderWizard({
                     <button
                       key={s}
                       type="button"
+                      disabled={agotados.talles.includes(s)}
+                      title={agotados.talles.includes(s) ? "Sin stock" : undefined}
                       onClick={() => setSize(s)}
                       className={clsx(
-                        "h-11 w-11 rounded-full border text-sm transition-colors",
-                        size === s ? "border-ink bg-ink text-paper" : "border-line hover:border-ink"
+                        "relative h-11 w-11 rounded-full border text-sm transition-colors",
+                        agotados.talles.includes(s)
+                          ? // Tachado y apagado: un boton deshabilitado que se ve
+                            // igual que uno disponible hace tocar en vano.
+                            "cursor-not-allowed border-line text-ink-soft/40 line-through"
+                          : size === s
+                            ? "border-ink bg-ink text-paper"
+                            : "border-line hover:border-ink"
                       )}
                     >
                       {s}
@@ -720,20 +773,36 @@ export function OrderWizard({
                 <div>
                   <p className="mb-3 text-sm font-medium">Color</p>
                   <div className="flex flex-wrap gap-3">
-                    {productColors.map((c) => (
-                      <button
-                        key={c.id}
-                        type="button"
-                        disabled={!!size && !hayStock(stock, product.id, size, c.name, 1)}
-                        onClick={() => setColor(c.name)}
-                        title={c.name}
-                        className={clsx(
-                          "h-9 w-9 rounded-full border-2 transition-transform",
-                          color === c.name ? "border-accent scale-110" : "border-line"
-                        )}
-                        style={{ backgroundColor: c.hex }}
-                      />
-                    ))}
+                    {productColors.map((c) => {
+                      const agotado = agotados.colores.includes(c.name);
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          disabled={agotado}
+                          onClick={() => setColor(c.name)}
+                          title={agotado ? `${c.name} — sin stock` : c.name}
+                          className={clsx(
+                            "relative h-9 w-9 rounded-full border-2 transition-transform",
+                            agotado
+                              ? "cursor-not-allowed border-line opacity-40"
+                              : color === c.name
+                                ? "border-accent scale-110"
+                                : "border-line"
+                          )}
+                          style={{ backgroundColor: c.hex }}
+                        >
+                          {/* Una barra cruzada: el circulo de color no admite
+                              tachado, y sin marca el apagado se lee como
+                              "gris claro" en vez de "no hay". */}
+                          {agotado && (
+                            <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                              <span className="h-px w-7 rotate-45 bg-ink-soft" />
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -882,11 +951,15 @@ export function OrderWizard({
                 <div className="space-y-3">
                   {lines.map((l) => {
                     const lProduct = products.find((p) => p.id === l.productId);
+                    const caida = !lProduct;
                     const lb = lineBreakdown(l);
                     return (
                       <div
                         key={l.id}
-                        className="flex flex-wrap items-center gap-4 rounded-xl border border-line bg-paper p-4"
+                        className={clsx(
+                          "flex flex-wrap items-center gap-4 rounded-xl border p-4",
+                          caida ? "border-accent/50 bg-accent/5" : "border-line bg-paper"
+                        )}
                       >
                         <div className="flex gap-2">
                           {Object.entries(l.prints).map(([key, entry]) => (
@@ -910,7 +983,15 @@ export function OrderWizard({
                         </div>
 
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium">{lProduct?.name}</p>
+                          <p className="text-sm font-medium">
+                            {lProduct?.name ?? "Prenda ya no disponible"}
+                          </p>
+                          {caida && (
+                            <p className="text-xs text-accent">
+                              Dejamos de tenerla. Quitala del pedido para poder
+                              confirmar.
+                            </p>
+                          )}
                           <p className="text-xs text-ink-soft">
                             Talle {l.size}
                             {l.color ? " \u00b7 " + l.color : ""} \u00b7 $
