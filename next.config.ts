@@ -70,6 +70,15 @@ const securityHeaders = [
 
   // Solo por HTTPS, incluidos los subdominios.
   { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
+
+  // Una pestaña abierta desde el sitio queda aislada: la que abre no puede
+  // manipular la que se abrió, ni al revés. El sitio no usa ventanas emergentes
+  // que necesiten hablarse, así que no cuesta nada.
+  { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+
+  // Otros sitios no pueden incrustar los recursos de este. De paso corta el
+  // enganche de imágenes desde afuera.
+  { key: "Cross-Origin-Resource-Policy", value: "same-origin" },
 ];
 
 const nextConfig: NextConfig = {
