@@ -6,7 +6,7 @@ import { Move, RotateCw } from "lucide-react";
 /**
  * Cómo quedó acomodado el diseño dentro de la zona de estampado.
  *
- * `tx`/`ty` salen como fracción del ancho y alto de la zona, no en píxeles: la
+ * `tx`/`ty` van como fracción del ancho y alto de la zona, no en píxeles: la
  * vista previa se ve de distinto tamaño según la pantalla, y guardarlo en
  * píxeles haría que la posición solo signifique algo en el tamaño exacto en que
  * se arrastró. Normalizado, se puede reproducir en cualquier tamaño.
@@ -18,28 +18,43 @@ const DEFAULT_TRANSFORM: DesignTransform = { tx: 0, ty: 0, scale: 1, rotation: 0
 export function DesignAdjuster({
   designUrl,
   overlay,
+  value,
   onChange,
 }: {
   designUrl: string;
   overlay: { x: number; y: number; w: number; h: number };
+  /** Cómo estaba acomodado. Sin esto, volver a una zona lo reseteaba. */
+  value?: DesignTransform | null;
   onChange?: (t: DesignTransform) => void;
 }) {
   const frameRef = useRef<HTMLDivElement>(null);
-  const [t, setT] = useState<DesignTransform>(DEFAULT_TRANSFORM);
+  const [t, setT] = useState<DesignTransform>(value ?? DEFAULT_TRANSFORM);
 
-  // Hacia afuera reportamos el desplazamiento como fracción de la zona, para
-  // que la posición se pueda reproducir en cualquier tamaño (por ejemplo al
-  // componer la imagen final que se manda por WhatsApp).
+  // El estado vive en fracciones, pero el arrastre y el dibujado necesitan
+  // píxeles, así que medimos la zona y nos mantenemos al tanto de sus cambios.
+  // De paso, la posición aguanta que se redimensione la ventana.
+  const [frame, setFrame] = useState({ w: 0, h: 0 });
+
   useEffect(() => {
-    const rect = frameRef.current?.getBoundingClientRect();
-    onChange?.({
-      tx: rect?.width ? t.tx / rect.width : 0,
-      ty: rect?.height ? t.ty / rect.height : 0,
-      scale: t.scale,
-      rotation: t.rotation,
-    });
+    const el = frameRef.current;
+    if (!el) return;
+
+    const medir = () => {
+      const rect = el.getBoundingClientRect();
+      setFrame({ w: rect.width, h: rect.height });
+    };
+    medir();
+
+    const ro = new ResizeObserver(medir);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  useEffect(() => {
+    onChange?.(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [t]);
+
   const dragRef = useRef<{
     mode: "move" | "transform";
     startPointer: { x: number; y: number };
@@ -54,8 +69,8 @@ export function DesignAdjuster({
     if (drag.mode === "move") {
       setT({
         ...drag.startT,
-        tx: drag.startT.tx + (e.clientX - drag.startPointer.x),
-        ty: drag.startT.ty + (e.clientY - drag.startPointer.y),
+        tx: drag.startT.tx + (e.clientX - drag.startPointer.x) / (frame.w || 1),
+        ty: drag.startT.ty + (e.clientY - drag.startPointer.y) / (frame.h || 1),
       });
     } else if (drag.center) {
       const v0 = { x: drag.startPointer.x - drag.center.x, y: drag.startPointer.y - drag.center.y };
@@ -66,7 +81,7 @@ export function DesignAdjuster({
       const angle1 = Math.atan2(v1.y, v1.x);
       // Tope de escala: más allá de esto el diseño empieza a exceder el área
       // real de impresión de la zona (el rectángulo "overlay" ya representa
-      // las dimensiones físicas máximas que Printful usa para esta prenda).
+      // las dimensiones físicas máximas que se usan para esta prenda).
       const scale = Math.min(2.2, Math.max(0.25, drag.startT.scale * (dist1 / dist0)));
       const rotation = drag.startT.rotation + ((angle1 - angle0) * 180) / Math.PI;
       setT({ ...drag.startT, scale, rotation });
@@ -92,7 +107,10 @@ export function DesignAdjuster({
     e.stopPropagation();
     const rect = frameRef.current?.getBoundingClientRect();
     if (!rect) return;
-    const center = { x: rect.left + rect.width / 2 + t.tx, y: rect.top + rect.height / 2 + t.ty };
+    const center = {
+      x: rect.left + rect.width / 2 + t.tx * rect.width,
+      y: rect.top + rect.height / 2 + t.ty * rect.height,
+    };
     dragRef.current = {
       mode: "transform",
       startPointer: { x: e.clientX, y: e.clientY },
@@ -118,7 +136,7 @@ export function DesignAdjuster({
       <div
         className="absolute left-1/2 top-1/2 w-[55%] cursor-move touch-none select-none"
         style={{
-          transform: `translate(-50%, -50%) translate(${t.tx}px, ${t.ty}px) rotate(${t.rotation}deg) scale(${t.scale})`,
+          transform: `translate(-50%, -50%) translate(${t.tx * frame.w}px, ${t.ty * frame.h}px) rotate(${t.rotation}deg) scale(${t.scale})`,
         }}
         onPointerDown={startMove}
       >

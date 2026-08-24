@@ -761,6 +761,7 @@ export function OrderWizard({
                       defaultZoneKey={activeZone}
                       zoneLabel={activeZoneLabel}
                       image={prints[activeZone]?.image ?? null}
+                      designTransform={prints[activeZone]?.transform ?? null}
                       onDesignTransformChange={setActiveTransform}
                     />
                   </div>

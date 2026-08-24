@@ -17,6 +17,8 @@ type Params = {
   defaultZoneKey: string | null;
   zoneLabel: string | null;
   image: UploadedImage | null;
+  /** Como quedo acomodado el diseno de esta zona la ultima vez. */
+  designTransform?: DesignTransform | null;
   onDesignTransformChange?: (t: DesignTransform | null) => void;
 };
 
@@ -47,6 +49,7 @@ export function PreviewStage({
   defaultZoneKey,
   zoneLabel,
   image,
+  designTransform,
   onDesignTransformChange,
 }: Params) {
   const [state, setState] = useState<State>({ kind: "blank" });
@@ -168,10 +171,17 @@ export function PreviewStage({
       });
   }, [productId, size, color, effectiveZoneKey, imageUrl, printZoneKey, zoneLabel]);
 
+  const hasDesign =
+    (state.kind === "composite" || state.kind === "fallback") && !!state.designUrl;
+
+  // Solo se borra la posición cuando la zona realmente se quedó sin diseño.
+  // Antes se borraba también al pasar por "loading", que es justo lo que ocurre
+  // al cambiar de zona: entrabas a una zona ya acomodada y la reseteaba.
   useEffect(() => {
-    if (state.kind !== "composite" || !state.designUrl) onDesignTransformChange?.(null);
+    if (state.kind === "loading") return;
+    if (!hasDesign) onDesignTransformChange?.(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.kind, state.kind === "composite" ? state.designUrl : null]);
+  }, [state.kind, hasDesign]);
 
 
   if (state.kind === "composite") {
@@ -221,8 +231,10 @@ export function PreviewStage({
 
             {state.designUrl ? (
               <DesignAdjuster
+                key={printZoneKey ?? "sin-zona"}
                 designUrl={state.designUrl}
                 overlay={state.overlay}
+                value={designTransform}
                 onChange={onDesignTransformChange}
               />
             ) : (
@@ -331,7 +343,13 @@ export function PreviewStage({
               }}
             >
               {state.designUrl && (
-                <DesignAdjuster designUrl={state.designUrl} overlay={state.overlay} onChange={onDesignTransformChange} />
+                <DesignAdjuster
+                  key={printZoneKey ?? "sin-zona"}
+                  designUrl={state.designUrl}
+                  overlay={state.overlay}
+                  value={designTransform}
+                  onChange={onDesignTransformChange}
+                />
               )}
             </motion.div>
           ) : state.kind === "error" ? (
