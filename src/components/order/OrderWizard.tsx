@@ -300,6 +300,11 @@ export function OrderWizard({
   function duplicateLine(id: string) {
     const line = lines.find((l) => l.id === id);
     if (!line) return;
+
+    // Duplicar es "otra igual": si no queda stock para otra, no se duplica.
+    const quedan = stockDisponible(stock, line.productId, line.size, line.color);
+    if (quedan !== null && enCarrito(line.productId, line.size, line.color) >= quedan) return;
+
     setLines((prev) => [...prev, { ...line, id: newId() }]);
   }
 
@@ -307,9 +312,24 @@ export function OrderWizard({
     setLines((prev) => prev.filter((l) => l.id !== id));
   }
 
+  /**
+   * Cuánto se puede pedir de una prenda del carrito.
+   *
+   * El tope se calcula acá también: el paso de talle y color lo controlaba,
+   * pero desde el carrito se podía subir la cantidad o duplicar el renglón sin
+   * ningún freno, y el pedido recién fallaba al confirmar.
+   */
+  function topeDe(l: CartLine) {
+    const quedan = stockDisponible(stock, l.productId, l.size, l.color);
+    if (quedan === null) return 500;
+    return Math.max(1, quedan - enCarrito(l.productId, l.size, l.color, l.id));
+  }
+
   function setLineQuantity(id: string, q: number) {
     setLines((prev) =>
-      prev.map((l) => (l.id === id ? { ...l, quantity: Math.min(500, Math.max(1, q)) } : l))
+      prev.map((l) =>
+        l.id === id ? { ...l, quantity: Math.min(topeDe(l), Math.max(1, q)) } : l
+      )
     );
   }
 
@@ -1015,8 +1035,10 @@ export function OrderWizard({
                               <button
                                 type="button"
                                 onClick={() => setLineQuantity(l.id, l.quantity + 1)}
+                                disabled={l.quantity >= topeDe(l)}
+                                title={l.quantity >= topeDe(l) ? "No queda más stock" : undefined}
                                 aria-label="Agregar una"
-                                className="flex h-7 w-7 items-center justify-center rounded-full text-ink-soft hover:text-ink"
+                                className="flex h-7 w-7 items-center justify-center rounded-full text-ink-soft hover:text-ink disabled:opacity-30"
                               >
                                 <Plus size={13} />
                               </button>

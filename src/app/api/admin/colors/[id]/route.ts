@@ -17,8 +17,25 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   const service = createServiceClient();
+
+  // El stock guarda el color por nombre, así que renombrarlo dejaría esas filas
+  // huérfanas y la combinación pasaría a "sin control" sin que nadie lo note.
+  const { data: anterior } = await service
+    .from("product_colors")
+    .select("product_id,name")
+    .eq("id", id)
+    .maybeSingle();
+
   const { error } = await service.from("product_colors").update(update).eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  if (anterior && typeof update.name === "string" && update.name !== anterior.name) {
+    await service
+      .from("product_stock")
+      .update({ color: update.name })
+      .eq("product_id", anterior.product_id)
+      .eq("color", anterior.name);
+  }
 
   return NextResponse.json({ ok: true });
 }

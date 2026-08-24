@@ -95,22 +95,58 @@ export async function POST(req: Request) {
     pedidoPorCombinacion.set(k, (pedidoPorCombinacion.get(k) ?? 0) + l.quantity);
   }
 
+  // Se descuenta antes de guardar y de a una sentencia por combinación: la
+  // resta y la comprobación pasan juntas en la base. Validar leyendo y escribir
+  // después dejaría pasar dos pedidos simultáneos sobre el mismo último par.
+  const descontadas: { pid: string; talle: string; col: string | null; n: number }[] = [];
+
+  const devolver = async () => {
+    // Compensación: lo que ya se descontó vuelve, para no dejar unidades
+    // reservadas por un pedido que no llegó a existir.
+    await Promise.all(
+      descontadas.map((d) =>
+        supabase.rpc("descontar_stock", {
+          p_product: d.pid,
+          p_size: d.talle,
+          p_color: d.col,
+          p_cantidad: -d.n,
+        })
+      )
+    );
+  };
+
   for (const [k, pedidas] of pedidoPorCombinacion) {
-    const [pid, talle, col] = k.split("|");
-    const quedan = stockDisponible(stock ?? [], pid, talle, col || null);
-    if (quedan !== null && pedidas > quedan) {
+    const [pid, talle, colRaw] = k.split("|");
+    const col = colRaw || null;
+
+    const { data: restante, error: stockError } = await supabase.rpc("descontar_stock", {
+      p_product: pid,
+      p_size: talle,
+      p_color: col,
+      p_cantidad: pedidas,
+    });
+
+    // Si la función todavía no existe (migración sin correr), se sigue sin
+    // control de stock en vez de trabar la venta.
+    if (stockError) break;
+
+    if (restante === -1) {
+      await devolver();
       const prenda = products.find((p) => p.id === pid)?.name ?? "la prenda";
       const detalle = `${prenda} talle ${talle}${col ? ` ${col}` : ""}`;
+      const quedan = stockDisponible(stock ?? [], pid, talle, col);
       return NextResponse.json(
         {
           error:
-            quedan === 0
-              ? `Nos quedamos sin ${detalle}.`
-              : `Solo quedan ${quedan} de ${detalle}.`,
+            quedan && quedan > 0
+              ? `Solo quedan ${quedan} de ${detalle}.`
+              : `Nos quedamos sin ${detalle}.`,
         },
         { status: 409 }
       );
     }
+
+    if (restante !== null) descontadas.push({ pid, talle, col, n: pedidas });
   }
 
   // El precio de cada prenda lo decide el servidor con la misma función que usa
@@ -156,6 +192,7 @@ export async function POST(req: Request) {
     .single();
 
   if (error) {
+    await devolver();
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
@@ -197,20 +234,6 @@ export async function POST(req: Request) {
 
   if (itemsError) {
     return NextResponse.json({ error: itemsError.message }, { status: 500 });
-  }
-
-  // Descontar lo vendido. Solo se tocan las combinaciones que llevan control:
-  // las que no tienen fila se piden libremente.
-  for (const [k, pedidas] of pedidoPorCombinacion) {
-    const [pid, talle, col] = k.split("|");
-    const fila = (stock ?? []).find(
-      (s) => s.product_id === pid && s.size === talle && (s.color ?? "") === (col ?? "")
-    );
-    if (!fila) continue;
-    await supabase
-      .from("product_stock")
-      .update({ quantity: Math.max(0, fila.quantity - pedidas), updated_at: new Date().toISOString() })
-      .eq("id", fila.id);
   }
 
   if (process.env.RESEND_API_KEY && process.env.ADMIN_NOTIFICATION_EMAIL) {

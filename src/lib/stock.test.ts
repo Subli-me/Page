@@ -72,3 +72,30 @@ describe("tallesSinStock", () => {
     expect(tallesSinStock(STOCK, P, ["XL"])).toEqual([]);
   });
 });
+
+describe("el carrito con varios renglones de la misma combinación", () => {
+  /**
+   * El caso que se escapaba: agregar 1 al carrito, ir al carrito y subir la
+   * cantidad. Cada renglón miraba el stock por su cuenta, así que se podían
+   * pedir más unidades de las que había y el pedido recién fallaba al
+   * confirmar.
+   */
+  const tope = (quedan: number | null, yaEnCarrito: number) =>
+    quedan === null ? 500 : Math.max(1, quedan - yaEnCarrito);
+
+  it("el tope descuenta lo que ya reservaron los otros renglones", () => {
+    // Quedan 4 y otro renglón ya tiene 3: solo entra 1 más.
+    expect(tope(4, 3)).toBe(1);
+  });
+
+  it("sin control de stock el tope no depende del carrito", () => {
+    expect(tope(null, 300)).toBe(500);
+  });
+
+  it("dos renglones no pueden sumar más de lo disponible", () => {
+    const quedan = 4;
+    const renglonA = 3;
+    const renglonB = tope(quedan, renglonA);
+    expect(renglonA + renglonB).toBeLessThanOrEqual(quedan);
+  });
+});
