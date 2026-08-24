@@ -7,9 +7,11 @@ import { Marquee } from "@/components/Marquee";
 import { Reveal } from "@/components/Reveal";
 import { ProductGrid } from "@/components/ProductGrid";
 import { DesignGrid } from "@/components/DesignGrid";
+import { WorkShowcase } from "@/components/WorkShowcase";
 import { HeroImage } from "@/components/HeroImage";
 import { getActiveProducts } from "@/lib/products";
 import { getActiveDesigns } from "@/lib/designs";
+import { getActiveWorks } from "@/lib/works";
 import { getSiteSettings } from "@/lib/settings";
 import { SITE_URL } from "@/lib/site-url";
 import { isAuthorizedAdmin } from "@/lib/admin-auth";
@@ -24,9 +26,10 @@ export default async function Home({
 }: {
   searchParams: Promise<{ edit?: string }>;
 }) {
-  const [products, designs, settings, canEdit, sp] = await Promise.all([
+  const [products, designs, works, settings, canEdit, sp] = await Promise.all([
     getActiveProducts(),
     getActiveDesigns(),
+    getActiveWorks(),
     getSiteSettings(),
     isAuthorizedAdmin(),
     searchParams,
@@ -105,6 +108,8 @@ export default async function Home({
             <ProductGrid products={products} />
           </div>
         </section>
+
+        <WorkShowcase works={works} />
 
         {/* Catálogo de diseños */}
         {designs.length > 0 && (

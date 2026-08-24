@@ -64,6 +64,23 @@ export type ProductStock = {
   quantity: number;
 };
 
+/**
+ * Un trabajo hecho, para mostrar en la página de inicio.
+ *
+ * La foto es obligatoria y el testimonio no: la galería ya convence sola, y el
+ * comentario suma cuando el cliente dijo algo.
+ */
+export type WorkShowcase = {
+  id: string;
+  image_url: string;
+  image_public_id: string;
+  caption: string | null;
+  customer_name: string | null;
+  quote: string | null;
+  active: boolean;
+  sort_order: number;
+};
+
 export type OrderStatus =
   | "pendiente"
   | "confirmado"

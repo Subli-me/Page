@@ -25,6 +25,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Link href="/admin/disenos" className="block rounded-lg px-3 py-2 text-ink-soft hover:bg-panel hover:text-ink">
             Catálogo de diseños
           </Link>
+          <Link href="/admin/trabajos" className="block rounded-lg px-3 py-2 text-ink-soft hover:bg-panel hover:text-ink">
+            Trabajos hechos
+          </Link>
           <Link href="/admin/mockups" className="block rounded-lg px-3 py-2 text-ink-soft hover:bg-panel hover:text-ink">
             Mockups propios
           </Link>
