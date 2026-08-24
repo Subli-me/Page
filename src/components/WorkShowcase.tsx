@@ -18,8 +18,16 @@ import type { WorkShowcase as Work } from "@/lib/types";
  * el gesto del dedo en el celular funciona sin que haya que programarlo, y con
  * el teclado también se navega.
  */
+/** Cada cuánto pasa al siguiente grupo. */
+const INTERVALO_MS = 5000;
+
+/** Cuánto espera para retomar el avance después de que alguien lo movió. */
+const REANUDAR_MS = 10000;
+
 export function WorkShowcase({ works, perView = 3 }: { works: Work[]; perView?: number }) {
   const pistaRef = useRef<HTMLDivElement>(null);
+  const reanudarRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [pausado, setPausado] = useState(false);
   const [alcanzables, setAlcanzables] = useState({ atras: false, adelante: false });
 
   // Cuántas entran de verdad. En pantallas chicas se muestran menos aunque la
@@ -59,7 +67,49 @@ export function WorkShowcase({ works, perView = 3 }: { works: Work[]; perView?: 
     };
   }, [works.length, visibles]);
 
+  const hayCarrusel = works.length > visibles;
+
+  /**
+   * Avance solo.
+   *
+   * Se frena en varios casos a propósito: mover el contenido mientras alguien
+   * lee un testimonio es peor que no moverlo. Se pausa al pasar el mouse, al
+   * navegar con teclado, cuando la pestaña no está a la vista, y un rato
+   * después de que la persona deslizó a mano, para no pelearle el control.
+   *
+   * Y no corre si el visitante pidió menos movimiento en su sistema.
+   */
+  useEffect(() => {
+    if (!hayCarrusel || pausado) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const id = setInterval(() => {
+      const pista = pistaRef.current;
+      if (!pista || document.hidden) return;
+
+      const alFinal = pista.scrollLeft + pista.clientWidth >= pista.scrollWidth - 8;
+      pista.scrollTo({
+        left: alFinal ? 0 : pista.scrollLeft + pista.clientWidth,
+        behavior: "smooth",
+      });
+    }, INTERVALO_MS);
+
+    return () => clearInterval(id);
+  }, [hayCarrusel, pausado]);
+
+  /** Un rato sin avance solo después de que la persona deslizó a mano. */
+  function pausarUnRato() {
+    setPausado(true);
+    if (reanudarRef.current) clearTimeout(reanudarRef.current);
+    reanudarRef.current = setTimeout(() => setPausado(false), REANUDAR_MS);
+  }
+
+  useEffect(() => () => {
+    if (reanudarRef.current) clearTimeout(reanudarRef.current);
+  }, []);
+
   function mover(dir: -1 | 1) {
+    pausarUnRato();
     const pista = pistaRef.current;
     if (!pista) return;
     // Se avanza una pantalla completa, no una tarjeta: así no queda una mitad
@@ -68,10 +118,9 @@ export function WorkShowcase({ works, perView = 3 }: { works: Work[]; perView?: 
   }
 
   // Sin trabajos cargados la sección no existe: una galería vacía dice lo
-  // contrario de lo que se busca.
+  // contrario de lo que se busca. Va después de los hooks, que no pueden
+  // quedar detrás de un retorno anticipado.
   if (works.length === 0) return null;
-
-  const hayCarrusel = works.length > visibles;
 
   return (
     <section id="trabajos" className="border-t border-line/70 bg-panel">
@@ -111,6 +160,12 @@ export function WorkShowcase({ works, perView = 3 }: { works: Work[]; perView?: 
 
         <div
           ref={pistaRef}
+          onMouseEnter={() => setPausado(true)}
+          onMouseLeave={() => setPausado(false)}
+          onFocusCapture={() => setPausado(true)}
+          onBlurCapture={() => setPausado(false)}
+          onPointerDown={pausarUnRato}
+          onWheel={pausarUnRato}
           className={clsx(
             "flex gap-4 overflow-x-auto pb-2",
             // La barra se oculta pero el scroll sigue existiendo: en celular se
@@ -163,7 +218,7 @@ export function WorkShowcase({ works, perView = 3 }: { works: Work[]; perView?: 
 
         {hayCarrusel && (
           <p className="mt-4 text-center text-xs text-ink-soft">
-            {works.length} trabajos · deslizá para ver más
+            {works.length} trabajos · pasan solos, o deslizá vos
           </p>
         )}
       </div>
