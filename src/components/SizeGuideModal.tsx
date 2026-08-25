@@ -9,12 +9,16 @@ import type { Product, ProductSize } from "@/lib/types";
 
 export function SizeGuideModal({
   triggerLabel,
+  triggerClassName = "link-underline text-paper/70 transition-colors hover:text-paper",
   title,
   subtitle,
   products,
   sizes,
 }: {
   triggerLabel: string;
+  // La barra decide donde se ve cada disparador: en el menu de escritorio o en
+  // el desplegable del celular. El modal no tiene por que saberlo.
+  triggerClassName?: string;
   title: string;
   subtitle: string;
   products: Product[];
@@ -77,7 +81,7 @@ export function SizeGuideModal({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="link-underline hidden text-paper/70 transition-colors hover:text-paper sm:inline"
+        className={triggerClassName}
       >
         {triggerLabel}
       </button>
