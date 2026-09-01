@@ -487,12 +487,12 @@ export function MockupGeneratorAdmin({
                             ? "border-accent bg-accent/10 ring-2 ring-accent"
                             : "border-line bg-paper hover:border-ink-soft"
                         )}
-                        title={d.title}
+                        title={d.name}
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={d.image_url}
-                          alt={d.title}
+                          alt={d.name}
                           className="max-h-full max-w-full object-contain"
                         />
                       </button>
